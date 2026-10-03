@@ -1,15 +1,18 @@
 const express = require("express");
 const { executeQuery } = require("../db/database");
 const { successResponse } = require("../utils/response");
+const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
-router.get("/", async (req, res, next) => {
+router.get("/", requireAuth, async (req, res, next) => {
     try {
+        const userId = req.user.id;
         const history = await executeQuery(async (db) => {
             return await db`
                 SELECT city, searched_at AS "searchedAt" 
                 FROM search_history 
+                WHERE user_id = ${userId}
                 ORDER BY searched_at DESC 
                 LIMIT 10
             `;

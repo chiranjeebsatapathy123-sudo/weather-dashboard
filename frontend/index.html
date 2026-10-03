@@ -18,6 +18,7 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+
     <!-- Leaflet Map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -83,10 +84,28 @@
                 </div>
                 <button id="locationBtn" class="nav-btn" style="width: auto;" aria-label="Use my location">📍 Use my location</button>
                 <div class="header-actions">
-                    <button class="icon-btn" id="notifBtn" aria-label="Notifications">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                        <span class="badge" id="notifBadge" style="display: none;">0</span>
-                    </button>
+                    <div style="position: relative;">
+                        <button class="icon-btn" id="notifBtn" aria-label="Notifications">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                            <span class="badge" id="notifBadge" style="display: block;">1</span>
+                        </button>
+                        <div id="notifDropdown" class="glass-card notif-dropdown" style="display: none; position: absolute; top: 40px; right: 0; width: 300px; z-index: 1000; padding: 0;">
+                            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                                <h3 style="margin: 0; font-size: 1rem;">Notifications</h3>
+                                <span style="font-size: 0.8rem; cursor: pointer; opacity: 0.7;" onclick="document.getElementById('notifDropdown').style.display='none'">Close</span>
+                            </div>
+                            <div id="notifList" style="max-height: 300px; overflow-y: auto; padding: 0;">
+                                <div class="notif-item">
+                                    <div style="font-weight: 500; font-size: 0.95rem; color: #ffaa00;">Autonomous Monitor Triggered</div>
+                                    <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 4px;">Risk crossed threshold: High Wind Warning in New York</div>
+                                    <div style="font-size: 0.75rem; opacity: 0.5; margin-top: 6px;">2 mins ago</div>
+                                </div>
+                            </div>
+                            <div style="padding: 10px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; cursor: pointer; color: var(--primary); font-size: 0.9rem;" onclick="document.querySelector('.nav-btn[data-target=\'alerts\']').click(); document.getElementById('notifDropdown').style.display='none'">
+                                View All Alerts
+                            </div>
+                        </div>
+                    </div>
                     <button class="icon-btn" id="refreshBtn" aria-label="Refresh Data">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                     </button>
@@ -153,6 +172,9 @@
                         <div class="insights-list" id="weatherBriefContent">
                             <p class="skeleton-text"></p>
                             <p class="skeleton-text"></p>
+                        </div>
+                        <div id="insightsList" style="margin-top: 16px;">
+                            <!-- WeatherInsight component renders here -->
                         </div>
                     </section>
 
@@ -239,8 +261,14 @@
             <div id="view-locations" class="view-section" style="display: none;">
                 <div class="locations-grid">
                     <section class="glass-card">
-                        <h2>Saved Locations</h2>
-                        <div id="favoritesList" class="location-list"></div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2>Saved Locations</h2>
+                            <div class="search-bar" style="max-width: 300px; margin-bottom: 0;">
+                                <input type="text" id="addLocationInput" placeholder="Add a city..." />
+                                <button onclick="saveCustomLocation()" class="icon-btn" style="background: var(--primary); color: white;">+</button>
+                            </div>
+                        </div>
+                        <div id="favoritesList" class="location-list advanced-location-list"></div>
                     </section>
                     <section class="glass-card">
                         <h2>Recent Searches</h2>
@@ -316,34 +344,50 @@
                     <p style="margin-top: 8px; opacity: 0.8;">WeatherOS learns your preferences to provide better predictive insights. Configure your thresholds below.</p>
                     
                     <div style="margin-top: 24px;">
-                        <h3>Weather Preferences</h3>
-                        <div style="display: flex; gap: 12px; margin-top: 12px;">
-                            <label><input type="radio" name="tempUnit" checked> Celsius</label>
-                            <label><input type="radio" name="tempUnit"> Fahrenheit</label>
+                        <h3>Unit Preferences</h3>
+                        <div style="display: flex; gap: 12px; margin-top: 12px;" id="unitPreferences">
+                            <label style="cursor: pointer;"><input type="radio" name="tempUnit" value="C" checked> Metric (°C, km/h)</label>
+                            <label style="cursor: pointer; margin-left: 15px;"><input type="radio" name="tempUnit" value="F"> Imperial (°F, mph)</label>
                         </div>
                     </div>
 
-                    <div style="margin-top: 24px;">
-                        <h3>Activity Profiles</h3>
-                        <div style="background: rgba(0,0,0,0.1); padding: 16px; border-radius: 8px; margin-top: 12px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                                <strong>Walking</strong>
-                                <span style="color: var(--success, #10b981);">Enabled</span>
+                    <div style="margin-top: 30px;">
+                        <h3 style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">Activity Operational Thresholds</h3>
+                        <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                                <strong style="font-size: 1.1rem; color: #a5d6ff;">Field Operations (Walking/Transit)</strong>
+                                
                             </div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
-                                <div>Pref Temp: 10-30°C</div>
-                                <div>Max Wind: 20 km/h</div>
-                                <div>Max Rain: 40%</div>
-                                <div>Max UV: 8</div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 14px;">
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    <label style="opacity: 0.8; font-size: 0.85rem;">Pref. Temp Range (°C)</label>
+                                    <input type="text" id="prefTemp" value="10-30" style="padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: white;" />
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    <label style="opacity: 0.8; font-size: 0.85rem;">Max Wind (km/h)</label>
+                                    <input type="number" id="maxWind" value="20" style="padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: white;" />
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    <label style="opacity: 0.8; font-size: 0.85rem;">Max Rain Prob. (%)</label>
+                                    <input type="number" id="maxRain" value="40" style="padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: white;" />
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    <label style="opacity: 0.8; font-size: 0.85rem;">Max UV Index</label>
+                                    <input type="number" id="maxUV" value="8" style="padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: white;" />
+                                </div>
                             </div>
-                            <button class="btn-primary" style="margin-top: 12px; font-size: 13px; padding: 6px 12px;">Edit Profile</button>
+                            
+                            <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                                <button onclick="savePersonalization()" class="btn-primary" style="font-size: 13px; padding: 8px 16px; background: #238636;">Save Configuration</button>
+                            </div>
                         </div>
                     </div>
 
-                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
-                        <h3>Privacy Controls</h3>
-                        <p style="font-size: 13px; opacity: 0.7; margin-top: 8px;">WeatherOS stores your selected activity preferences to personalize recommendations.</p>
-                        <button class="btn-primary" style="margin-top: 12px; background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">Reset Personalization</button>
+                    <div style="margin-top: 30px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <h3>System Controls</h3>
+                        <p style="font-size: 13px; opacity: 0.7; margin-top: 8px;">WeatherOS stores your selected activity preferences locally to personalize AI Copilot recommendations.</p>
+                        <button onclick="resetPersonalization()" class="btn-primary" style="margin-top: 12px; background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">Reset to Defaults</button>
                     </div>
                 </section>
             </div>

@@ -20,13 +20,8 @@ module.exports = {
             location: weatherData.location.name,
             timestamp: new Date().toISOString(),
             retrieved_at: weatherData.timestamp || new Date().toISOString(),
-            source: weatherData.provider || "OpenWeatherMap",
-            current: {
-                temperature: weatherData.temperature,
-                condition: weatherData.condition.description,
-                wind_speed: weatherData.wind?.speed || 0,
-                humidity: weatherData.humidity || 0
-            }
+            source: weatherData.source || "OpenWeatherMap",
+            currentWeather: weatherData
         };
 
         if (forecastData) {

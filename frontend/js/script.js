@@ -96,6 +96,23 @@ refreshBtn.addEventListener('click', () => {
     });
 });
 
+document.getElementById('notifBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dd = document.getElementById('notifDropdown');
+    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+    if (dd.style.display === 'block') {
+        document.getElementById('notifBadge').style.display = 'none';
+    }
+});
+
+// Hide dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const dd = document.getElementById('notifDropdown');
+    if (dd && dd.style.display === 'block' && !dd.contains(e.target) && e.target.closest('#notifBtn') == null) {
+        dd.style.display = 'none';
+    }
+});
+
 if (locationBtn) {
     locationBtn.addEventListener('click', () => {
         if ("geolocation" in navigator) {
@@ -166,6 +183,7 @@ async function loadDashboardData(city, isBackgroundRefresh = false) {
         CurrentWeather.render(weatherData);
         WeatherMetrics.render(weatherData);
         WeatherBrief.render(weatherData, forecastData, riskData);
+        WeatherInsight.render(insightsData.insights);
         // BestTime.render(weatherData, forecastData); // Replaced by Phase 6 Risk logic
         
         // Render Phase 6 Risk UI
@@ -250,11 +268,71 @@ window.removeFavorite = async (city) => {
     } catch (err) { }
 };
 
+window.saveCustomLocation = async () => {
+    const input = document.getElementById('addLocationInput');
+    const city = input.value.trim();
+    if (!city) return;
+    
+    try {
+        await api.post(`/favorites`, { city });
+        input.value = '';
+        fetchLocations();
+    } catch (err) { 
+        showError(err.message || 'Failed to add location');
+    }
+};
+
 window.loadCity = (city) => {
     currentCity = city;
     loadDashboardData(currentCity);
     switchView('dashboard');
 };
+
+// --- Personalization Advanced Logic ---
+window.savePersonalization = () => {
+    const config = {
+        unit: document.querySelector('input[name="tempUnit"]:checked').value,
+        prefTemp: document.getElementById('prefTemp').value,
+        maxWind: document.getElementById('maxWind').value,
+        maxRain: document.getElementById('maxRain').value,
+        maxUV: document.getElementById('maxUV').value
+    };
+    localStorage.setItem('weatheros_config', JSON.stringify(config));
+    
+    // Show toast or temporary success state
+    const btn = document.querySelector('button[onclick="savePersonalization()"]');
+    const originalText = btn.innerText;
+    btn.innerText = "✓ Saved Successfully";
+    btn.style.background = "#10b981";
+    setTimeout(() => {
+        btn.innerText = originalText;
+        btn.style.background = "#238636";
+    }, 2000);
+};
+
+window.resetPersonalization = () => {
+    localStorage.removeItem('weatheros_config');
+    document.getElementById('prefTemp').value = "10-30";
+    document.getElementById('maxWind').value = "20";
+    document.getElementById('maxRain').value = "40";
+    document.getElementById('maxUV').value = "8";
+    document.querySelector('input[name="tempUnit"][value="C"]').checked = true;
+};
+
+// Load personalization on boot
+window.addEventListener('DOMContentLoaded', () => {
+    const configStr = localStorage.getItem('weatheros_config');
+    if (configStr) {
+        try {
+            const config = JSON.parse(configStr);
+            if(config.unit) document.querySelector(`input[name="tempUnit"][value="${config.unit}"]`).checked = true;
+            if(config.prefTemp) document.getElementById('prefTemp').value = config.prefTemp;
+            if(config.maxWind) document.getElementById('maxWind').value = config.maxWind;
+            if(config.maxRain) document.getElementById('maxRain').value = config.maxRain;
+            if(config.maxUV) document.getElementById('maxUV').value = config.maxUV;
+        } catch(e){}
+    }
+});
 
 function switchView(viewId) {
     views.forEach(v => v.style.display = 'none');

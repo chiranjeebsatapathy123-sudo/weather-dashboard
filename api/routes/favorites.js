@@ -2,15 +2,20 @@ const express = require("express");
 const { executeQuery } = require("../db/database");
 const { successResponse, errorResponse } = require("../utils/response");
 const { validateCityQuery } = require("../middleware/validation");
+const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
+router.use(requireAuth);
+
 router.get("/", async (req, res, next) => {
     try {
+        const userId = req.user.id;
         const favorites = await executeQuery(async (db) => {
             return await db`
                 SELECT city, added_at AS "addedAt" 
                 FROM favorites 
+                WHERE user_id = ${userId}
                 ORDER BY added_at DESC
             `;
         });
@@ -23,9 +28,10 @@ router.get("/", async (req, res, next) => {
 router.post("/", validateCityQuery, async (req, res, next) => {
     try {
         const city = req.validatedCity;
+        const userId = req.user.id;
         
         const existing = await executeQuery(async (db) => {
-            return await db`SELECT city FROM favorites WHERE LOWER(city) = LOWER(${city})`;
+            return await db`SELECT city FROM favorites WHERE LOWER(city) = LOWER(${city}) AND user_id = ${userId}`;
         });
         
         if (existing.length > 0) {
@@ -34,8 +40,8 @@ router.post("/", validateCityQuery, async (req, res, next) => {
 
         const favorite = await executeQuery(async (db) => {
             return await db`
-                INSERT INTO favorites (city) 
-                VALUES (${city}) 
+                INSERT INTO favorites (user_id, city) 
+                VALUES (${userId}, ${city}) 
                 RETURNING city, added_at AS "addedAt"
             `;
         });
@@ -49,8 +55,9 @@ router.post("/", validateCityQuery, async (req, res, next) => {
 router.delete("/:city", async (req, res, next) => {
     try {
         const city = req.params.city;
+        const userId = req.user.id;
         await executeQuery(async (db) => {
-            await db`DELETE FROM favorites WHERE LOWER(city) = LOWER(${city})`;
+            await db`DELETE FROM favorites WHERE LOWER(city) = LOWER(${city}) AND user_id = ${userId}`;
         });
         return successResponse(res, { message: "Favorite removed" });
     } catch (error) {

@@ -72,7 +72,10 @@ const normalizeWeatherData = (data, airQualityData = null) => {
         airQuality: aqi ? {
             index: aqi,
             components: pollutants
-        } : null
+        } : null,
+        timestamp: new Date().toISOString(),
+        source: "openweathermap",
+        freshness: "live"
     };
 };
 
@@ -158,10 +161,14 @@ const fetchForecast = async (locationParam) => {
     }
 };
 
-const recordSearch = async (city) => {
+const recordSearch = async (city, userId = null) => {
     try {
         await executeQuery(async (db) => {
-            await db`INSERT INTO search_history (city) VALUES (${city})`;
+            if (userId) {
+                await db`INSERT INTO search_history (user_id, city) VALUES (${userId}, ${city})`;
+            } else {
+                await db`INSERT INTO search_history (city) VALUES (${city})`;
+            }
         });
     } catch (err) { }
 };

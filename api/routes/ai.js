@@ -3,6 +3,9 @@ const { successResponse, errorResponse } = require("../utils/response");
 const { generateContext } = require("../services/groundingService");
 const { detectIntent } = require("../services/ai/intentService");
 const { generateResponse } = require("../services/ai/aiProvider");
+const { fetchCurrentWeather, fetchForecast } = require("../services/weatherService");
+
+const { determineConfidence } = require("../services/ai/confidenceService");
 
 const router = express.Router();
 
@@ -18,17 +21,17 @@ router.post("/chat", async (req, res, next) => {
             return errorResponse(res, "INVALID_INPUT", "Message too long.", 400);
         }
 
-        // Fake fetching raw weather data since we are in route layer
-        // Normally this would call weatherService.js
-        const mockRawWeather = {
-            location: { name: locationId },
-            temperature: 22,
-            condition: { description: "clear sky" },
-            timestamp: new Date().toISOString()
-        };
+        // Fetch real weather data
+        let currentWeather, forecast;
+        try {
+            currentWeather = await fetchCurrentWeather(locationId);
+            forecast = await fetchForecast(locationId).catch(() => null);
+        } catch (err) {
+            return errorResponse(res, "DATA_UNAVAILABLE", "Insufficient verified weather data is available for this location.", 503);
+        }
 
         // 1. Build Strict Grounding Context
-        const contextData = generateContext(mockRawWeather);
+        const contextData = generateContext(currentWeather, forecast);
         if (contextData.error) {
             return errorResponse(res, "DATA_UNAVAILABLE", contextData.error, 503);
         }
@@ -36,26 +39,25 @@ router.post("/chat", async (req, res, next) => {
         // 2. Intent Detection
         const intent = detectIntent(message);
 
-        // 3. Generate Grounded Response
-        const answer = await generateResponse(contextData, message, intent);
+        // 3. Calculate Confidence (Rich)
+        const confidenceMeta = determineConfidence(contextData, intent);
 
-        // 4. Calculate Confidence (directly from grounding)
-        const confidenceLevel = contextData.confidence_status;
+        // 4. Generate Grounded Response
+        const answer = await generateResponse(contextData, message, intent);
 
         // 5. Structure Response
         const responseData = {
             answer,
             intent,
-            confidenceLevel,
-            sources: contextData.sources,
-            dataFreshness: contextData.dataFreshness
+            confidenceLevel: confidenceMeta.confidence,
+            confidenceReason: confidenceMeta.confidence_reason,
+            sources: confidenceMeta.sources,
+            dataFreshness: confidenceMeta.freshness,
+            retrievedAt: confidenceMeta.retrieved_at,
+            limitations: confidenceMeta.limitations
         };
 
-        // Artificial delay for Copilot feel
-        setTimeout(() => {
-            return successResponse(res, responseData, { ai: true });
-        }, 500);
-
+        return successResponse(res, responseData, { ai: true });
     } catch (error) {
         next(error);
     }

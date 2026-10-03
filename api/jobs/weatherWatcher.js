@@ -6,25 +6,41 @@
 const { evaluateSnapshot } = require('../services/eventEngine');
 const { shouldNotify } = require('../services/alertPolicyEngine');
 const { deliver } = require('../services/notificationProvider');
-
-// Mocked DB of locations to monitor
-const monitoredLocations = ['New York', 'London', 'Tokyo'];
-
-// Mock function for weather provider fetch
-async function fetchLatestSnapshot(location) {
-    // In production, this calls weatherService.js
-    // For architecture mock, return synthetic data
-    return { pop: Math.random() }; // Random rain probability
-}
+const { executeQuery } = require('../db/database');
+const { fetchCurrentWeather } = require('../services/weatherService');
 
 module.exports = {
     runJob: async () => {
         console.log(`[JOB] Starting WeatherWatcher job at ${new Date().toISOString()}`);
         
+        let monitoredLocations = [];
+        try {
+            const result = await executeQuery(async (db) => {
+                return await db`SELECT DISTINCT city FROM favorites`;
+            });
+            monitoredLocations = result.map(r => r.city);
+        } catch (error) {
+            console.error(`[JOB] Failed to fetch monitored locations:`, error.message);
+            return;
+        }
+        
+        if (monitoredLocations.length === 0) {
+            console.log(`[JOB] No locations to monitor. Job completed.`);
+            return;
+        }
+
         for (const location of monitoredLocations) {
             try {
-                const snapshot = await fetchLatestSnapshot(location);
-                const generatedEvents = evaluateSnapshot(location, snapshot, null);
+                // Fetch real weather data
+                const weatherData = await fetchCurrentWeather(location);
+                
+                const snapshot = {
+                    temperature: weatherData.temperature,
+                    wind_speed: weatherData.wind.speed,
+                    pop: weatherData.precipitation > 0 ? 1 : 0
+                };
+                
+                const generatedEvents = await evaluateSnapshot(location, snapshot, null);
 
                 for (const event of generatedEvents) {
                     if (event.status === 'DETECTED' || event.status === 'RESOLVED') {

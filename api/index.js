@@ -14,6 +14,11 @@ const locationsRoutes = require('./routes/locations');
 const alertsRoutes = require('./routes/alerts');
 const riskRoutes = require('./routes/risk');
 const developerRoutes = require('./routes/developer');
+const devicesRoutes = require('./routes/devices');
+const intelligenceRoutes = require('./routes/intelligence');
+const operationsRoutes = require('./routes/operations');
+const aiControlPlaneRoutes = require('./routes/ai/index');
+const platformRoutes = require('./routes/platform');
 
 const app = express();
 
@@ -37,6 +42,11 @@ v1Router.use('/alerts', alertsRoutes);
 v1Router.use('/risk', riskRoutes);
 v1Router.use('/health', healthRoutes);
 v1Router.use('/developer', developerRoutes);
+v1Router.use('/devices', devicesRoutes);
+v1Router.use('/intelligence', intelligenceRoutes);
+v1Router.use('/operations', operationsRoutes);
+v1Router.use('/ai-control-plane', aiControlPlaneRoutes);
+v1Router.use('/platform', platformRoutes);
 
 app.use('/api/v1', v1Router);
 

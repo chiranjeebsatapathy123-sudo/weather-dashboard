@@ -23,7 +23,7 @@ module.exports = {
             const keyRecord = await executeQuery(async (db) => {
                 const result = await db`
                     INSERT INTO api_keys (organization_id, key_hash, name, scopes)
-                    VALUES (${organizationId}, ${keyHash}, ${JSON.stringify(scopes)}, ${JSON.stringify(scopes)})
+                    VALUES (${organizationId}, ${keyHash}, ${name}, ${JSON.stringify(scopes)})
                     RETURNING id, name, created_at
                 `;
                 return result[0];

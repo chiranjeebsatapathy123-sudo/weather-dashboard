@@ -8,11 +8,18 @@ class ApiClient {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s frontend timeout
 
+        let userId = localStorage.getItem('weatheros_user_id');
+        if (!userId) {
+            userId = crypto.randomUUID ? crypto.randomUUID() : 'user-' + Date.now() + Math.random().toString(36).substring(7);
+            localStorage.setItem('weatheros_user_id', userId);
+        }
+
         const config = {
             ...options,
             signal: controller.signal,
             headers: {
                 'Content-Type': 'application/json',
+                'x-user-id': userId,
                 ...(options.headers || {})
             }
         };

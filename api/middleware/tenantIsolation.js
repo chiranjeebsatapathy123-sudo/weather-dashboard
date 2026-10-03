@@ -13,12 +13,11 @@ module.exports = {
      */
     requireOrganizationAccess: (requiredPermission) => {
         return (req, res, next) => {
-            // In a real app, `req.user` is populated by JWT authentication middleware earlier in the chain.
-            // For architecture simulation, we mock the user context if not present.
-            const user = req.user || { 
-                id: 'mock-user-1', 
-                organization_roles: { 'org-weatheros': 'MANAGER' } 
-            };
+            // Strictly enforce authentication boundary
+            if (!req.user) {
+                return errorResponse(res, "UNAUTHORIZED", "Authentication required.", 401);
+            }
+            const user = req.user;
 
             const targetOrgId = req.params.orgId || req.body.organization_id || req.query.organization_id;
 

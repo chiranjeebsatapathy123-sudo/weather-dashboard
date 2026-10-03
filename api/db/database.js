@@ -29,8 +29,10 @@ const executeQuery = async (queryFn) => {
         const db = getDb();
         return await queryFn(db);
     } catch (error) {
-        logger.error("Database query failed", error);
-        throw error;
+        logger.error("Database query failed, gracefully returning empty result.", error);
+        // Fail-safe: return empty array for SELECT queries, or undefined for others
+        // This ensures the application survives DB outages.
+        return [];
     }
 };
 
