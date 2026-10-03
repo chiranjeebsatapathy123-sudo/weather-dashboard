@@ -41,7 +41,7 @@ export const WeatherBrief = {
 
         // Add optimal windows from riskData
         if (riskData && riskData.optimalWindows && riskData.optimalWindows.length > 0) {
-            const best = riskData.optimalWindows.filter(w => w.risk.level === 'LOW').slice(0, 2);
+            const best = riskData.optimalWindows.filter(w => w.riskLevel === 'LOW').slice(0, 2);
             if (best.length > 0) {
                 const windowStrings = best.map(w => {
                     const t = new Date(w.time);
