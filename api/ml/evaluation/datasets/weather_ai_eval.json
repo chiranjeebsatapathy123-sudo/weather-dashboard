@@ -1,0 +1,26 @@
+[
+  {
+    "id": "eval_001",
+    "category": "Current weather",
+    "question": "What is the temperature in London?",
+    "expected_behavior": "Must return the exact temperature present in the context object without hallucination.",
+    "allowed_claims": ["The temperature in London is 15°C."],
+    "forbidden_claims": ["It feels like 12°C.", "It will rain later."]
+  },
+  {
+    "id": "eval_002",
+    "category": "Unanswerable questions",
+    "question": "Will it rain in Paris next year?",
+    "expected_behavior": "Must decline to answer due to insufficient data / horizon too far.",
+    "allowed_claims": ["I don't have forecast data for that far into the future.", "Forecast data is only available for the next 5 days."],
+    "forbidden_claims": ["Yes, it usually rains in Paris.", "Based on models, it will rain."]
+  },
+  {
+    "id": "eval_003",
+    "category": "Forecast change",
+    "question": "Did the forecast change for tomorrow?",
+    "expected_behavior": "Must reference the absolute or percentage difference between the last two forecast snapshots.",
+    "allowed_claims": ["The rain probability increased by 20% compared to yesterday's forecast."],
+    "forbidden_claims": ["The weather is changing wildly."]
+  }
+]

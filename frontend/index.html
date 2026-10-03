@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Intelligence</title>
+    
+    <!-- PWA Settings -->
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/assets/icon-192x192.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Leaflet Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container" id="app">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                <span>Weather Intelligence</span>
+            </div>
+            <nav class="nav-links">
+                <button class="nav-btn active" data-target="dashboard">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    Dashboard
+                </button>
+                <button class="nav-btn" data-target="locations">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    Locations
+                </button>
+                <button class="nav-btn" data-target="alerts">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    Alerts
+                </button>
+                <button class="nav-btn" data-target="map">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"></polygon><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+                    Map
+                </button>
+                <button class="nav-btn" data-target="history">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    History
+                </button>
+                <button class="nav-btn" data-target="compare">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    Compare
+                </button>
+                <button class="nav-btn" data-target="ai">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    Weather AI
+                </button>
+                <button class="nav-btn" data-target="personalization">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    Settings
+                </button>
+            </nav>
+            <div class="theme-toggle">
+                <button id="themeToggleBtn" aria-label="Toggle Theme">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="search-bar">
+                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="searchInput" placeholder="Search for a city..." autocomplete="off">
+                </div>
+                <button id="locationBtn" class="nav-btn" style="width: auto;" aria-label="Use my location">📍 Use my location</button>
+                <div class="header-actions">
+                    <button class="icon-btn" id="notifBtn" aria-label="Notifications">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span class="badge" id="notifBadge" style="display: none;">0</span>
+                    </button>
+                    <button class="icon-btn" id="refreshBtn" aria-label="Refresh Data">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    </button>
+                    <span class="last-updated" id="lastUpdated">Updated just now</span>
+                </div>
+            </header>
+
+            <!-- Loading / Error States -->
+            <div id="loader" class="loader-overlay" style="display: none;">
+                <div class="spinner"></div>
+            </div>
+            
+            <div id="errorMessage" class="error-banner" style="display: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <span id="errorText">Error loading data.</span>
+                <button id="closeError" class="icon-btn">×</button>
+            </div>
+
+            <!-- Dashboard View -->
+            <div id="view-dashboard" class="view-section active">
+                
+                <!-- WHAT MATTERS NOW Panel (Phase 6) -->
+                <section class="glass-card risk-panel" id="riskPanel" style="display: none; border-left: 4px solid var(--accent); margin-bottom: 24px;">
+                    <div class="card-header" style="margin-bottom: 8px;">
+                        <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent);">What Matters Now</h2>
+                    </div>
+                    <div id="riskContent" style="font-size: 15px;">
+                        <!-- Populated by JS -->
+                    </div>
+                </section>
+
+                <div class="dashboard-grid">
+                    <!-- Current Weather -->
+                    <section class="glass-card current-weather">
+                        <div class="weather-top">
+                            <div>
+                                <h1 id="cityName">--</h1>
+                                <p id="weatherDesc" class="weather-desc">--</p>
+                            </div>
+                            <button id="favBtn" class="icon-btn" aria-label="Favorite">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            </button>
+                        </div>
+                        <div class="weather-main-data">
+                            <img id="weatherIcon" src="" alt="" style="display:none;" class="large-icon">
+                            <div class="temp-display">
+                                <span id="currentTemp">--</span><span class="unit">°C</span>
+                            </div>
+                        </div>
+                        <div class="weather-meta">
+                            <span>Feels like <span id="feelsLike">--</span>°C</span>
+                            <div class="high-low">
+                                <span>H: <span id="tempHigh">--</span>°</span>
+                                <span>L: <span id="tempLow">--</span>°</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Personal Weather Brief Panel -->
+                    <section class="glass-card insights-panel">
+                        <div class="card-header">
+                            <h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Personal Weather Brief</h2>
+                        </div>
+                        <div class="insights-list" id="weatherBriefContent">
+                            <p class="skeleton-text"></p>
+                            <p class="skeleton-text"></p>
+                        </div>
+                    </section>
+
+                    <!-- Best Time Today Panel -->
+                    <section class="glass-card best-time-panel" id="bestTimePanel">
+                        <h4>Your Plan</h4>
+                        <div id="planContent" style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                            <!-- Phase 6 Activity Risk Windows populated here -->
+                            <p class="skeleton-text"></p>
+                        </div>
+                    </section>
+
+                    <!-- Environmental Stats -->
+                    <section class="glass-card env-stats">
+                        <div class="stat-grid">
+                            <div class="stat-box">
+                                <span class="stat-label">Humidity</span>
+                                <span class="stat-val" id="valHumidity">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Wind</span>
+                                <span class="stat-val" id="valWind">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Pressure</span>
+                                <span class="stat-val" id="valPressure">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Visibility</span>
+                                <span class="stat-val" id="valVisibility">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Cloud Cover</span>
+                                <span class="stat-val" id="valClouds">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">UV Index</span>
+                                <span class="stat-val" id="valUv">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Air Quality</span>
+                                <span class="stat-val" id="valAqi">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Sunrise</span>
+                                <span class="stat-val" id="valSunrise">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Sunset</span>
+                                <span class="stat-val" id="valSunset">--</span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Forecast Section -->
+                <div class="forecast-grid">
+                    <section class="glass-card hourly-forecast">
+                        <div class="card-header">
+                            <h2>24-Hour Forecast</h2>
+                        </div>
+                        <div class="hourly-timeline-container">
+                            <div class="hourly-timeline" id="hourlyTimeline">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                        <div class="chart-container" style="margin-top: 16px;">
+                            <canvas id="hourlyChart"></canvas>
+                        </div>
+                    </section>
+
+                    <section class="glass-card daily-forecast">
+                        <div class="card-header">
+                            <h2>5-Day Forecast</h2>
+                        </div>
+                        <div class="daily-list" id="dailyList">
+                            <!-- Populated by JS -->
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Locations View -->
+            <div id="view-locations" class="view-section" style="display: none;">
+                <div class="locations-grid">
+                    <section class="glass-card">
+                        <h2>Saved Locations</h2>
+                        <div id="favoritesList" class="location-list"></div>
+                    </section>
+                    <section class="glass-card">
+                        <h2>Recent Searches</h2>
+                        <div id="historyList" class="location-list"></div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Alerts View -->
+            <div id="view-alerts" class="view-section" style="display: none;">
+                <section class="glass-card">
+                    <div class="card-header"><h2>Weather Alerts</h2></div>
+                    <div id="alertsList" class="alerts-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Map View -->
+            <div id="view-map" class="view-section" style="display: none;">
+                <section class="glass-card map-panel">
+                    <div id="weatherMap" style="height: 600px; width: 100%; border-radius: 12px; z-index: 1;"></div>
+                </section>
+            </div>
+
+            <!-- History View -->
+            <div id="view-history" class="view-section" style="display: none;">
+                <section class="glass-card">
+                    <div class="card-header"><h2>Historical Data (7 Days)</h2></div>
+                    <div class="chart-container" style="height: 400px;">
+                        <canvas id="historyChart"></canvas>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Compare View -->
+            <div id="view-compare" class="view-section" style="display: none;">
+                <section class="glass-card">
+                    <div class="card-header"><h2>Compare Locations</h2></div>
+                    <div class="compare-controls" style="margin-bottom: 24px; display: flex; gap: 12px;">
+                        <input type="text" id="compareInput" placeholder="Add city to compare..." style="padding: 10px; border-radius: 8px; border: 1px solid var(--card-border); background: rgba(0,0,0,0.1); color: var(--text-primary); flex: 1;">
+                        <button id="addCompareBtn" class="nav-btn active" style="width: auto;">Add</button>
+                    </div>
+                    <div id="compareGrid" class="compare-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                        <!-- Populated by JS -->
+                    </div>
+                </section>
+            </div>
+            <div id="view-ai" class="view-section" style="display: none;">
+                <section class="glass-card ai-panel">
+                    <div class="card-header">
+                        <h2>✦ Weather AI</h2>
+                    </div>
+                    <div class="chat-window" id="chatWindow">
+                        <div class="chat-message ai">Hi! I'm your Weather Intelligence assistant. Ask me anything about the weather.</div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="aiInput" placeholder="Ask about your weather..." autocomplete="off">
+                        <button id="aiSendBtn" class="nav-btn active" style="width: auto; justify-content: center; padding: 14px 24px;">Ask</button>
+                    </div>
+                    <div class="suggested-prompts">
+                        <button class="prompt-btn">Will it rain today?</button>
+                        <button class="prompt-btn">Best time to go outside?</button>
+                        <button class="prompt-btn">Should I carry an umbrella?</button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Personalization / Settings View -->
+            <div id="view-personalization" class="view-section" style="display: none;">
+                <section class="glass-card">
+                    <h2>Personalization Center</h2>
+                    <p style="margin-top: 8px; opacity: 0.8;">WeatherOS learns your preferences to provide better predictive insights. Configure your thresholds below.</p>
+                    
+                    <div style="margin-top: 24px;">
+                        <h3>Weather Preferences</h3>
+                        <div style="display: flex; gap: 12px; margin-top: 12px;">
+                            <label><input type="radio" name="tempUnit" checked> Celsius</label>
+                            <label><input type="radio" name="tempUnit"> Fahrenheit</label>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px;">
+                        <h3>Activity Profiles</h3>
+                        <div style="background: rgba(0,0,0,0.1); padding: 16px; border-radius: 8px; margin-top: 12px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                <strong>Walking</strong>
+                                <span style="color: var(--success, #10b981);">Enabled</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+                                <div>Pref Temp: 10-30°C</div>
+                                <div>Max Wind: 20 km/h</div>
+                                <div>Max Rain: 40%</div>
+                                <div>Max UV: 8</div>
+                            </div>
+                            <button class="btn-primary" style="margin-top: 12px; font-size: 13px; padding: 6px 12px;">Edit Profile</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <h3>Privacy Controls</h3>
+                        <p style="font-size: 13px; opacity: 0.7; margin-top: 8px;">WeatherOS stores your selected activity preferences to personalize recommendations.</p>
+                        <button class="btn-primary" style="margin-top: 12px; background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">Reset Personalization</button>
+                    </div>
+                </section>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav" id="mobileNav">
+        <button class="mob-nav-btn active" data-target="dashboard">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span>Home</span>
+        </button>
+        <button class="mob-nav-btn" data-target="locations">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <span>Locations</span>
+        </button>
+        <button class="mob-nav-btn" data-target="alerts">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span>Alerts</span>
+        </button>
+        <button class="mob-nav-btn" data-target="map">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"></polygon><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+            <span>Map</span>
+        </button>
+        <button class="mob-nav-btn" data-target="ai">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            <span>AI Chat</span>
+        </button>
+    </nav>
+
+    <script src="js/script.js" type="module"></script>
+</body>
+</html>
