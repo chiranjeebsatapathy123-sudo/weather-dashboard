@@ -261,6 +261,8 @@ function switchView(viewId) {
     const target = document.getElementById(`view-${viewId}`);
     if (target) {
         target.style.display = 'block';
+        // Force charts and maps to recalculate size when they become visible
+        window.dispatchEvent(new Event('resize'));
     }
 }
 

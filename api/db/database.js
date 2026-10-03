@@ -8,9 +8,9 @@ let sql = null;
 const getDb = () => {
     if (!sql) {
         if (!process.env.DATABASE_URL) {
-            logger.warn("DATABASE_URL is not configured. Database operations will fail.");
-            // Return a dummy function to prevent immediate crashes if env is missing
-            return async () => { throw new Error("Database not configured"); };
+            logger.warn("DATABASE_URL is not configured. Database operations will return empty results.");
+            // Return a dummy function that resolves to an empty array for queries
+            return async () => { return []; };
         }
         try {
             sql = neon(process.env.DATABASE_URL);

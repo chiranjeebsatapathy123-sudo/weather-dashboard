@@ -13,6 +13,7 @@ const aiRoutes = require('./routes/ai');
 const locationsRoutes = require('./routes/locations');
 const alertsRoutes = require('./routes/alerts');
 const riskRoutes = require('./routes/risk');
+const developerRoutes = require('./routes/developer');
 
 const app = express();
 
@@ -35,6 +36,7 @@ v1Router.use('/locations', locationsRoutes);
 v1Router.use('/alerts', alertsRoutes);
 v1Router.use('/risk', riskRoutes);
 v1Router.use('/health', healthRoutes);
+v1Router.use('/developer', developerRoutes);
 
 app.use('/api/v1', v1Router);
 

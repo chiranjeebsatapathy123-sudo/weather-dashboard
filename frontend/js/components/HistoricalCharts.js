@@ -6,8 +6,21 @@ export const HistoricalCharts = {
         if (!ctx) return;
 
         if (!historyData || historyData.length === 0) {
-            ctx.parentElement.innerHTML = '<p style="opacity: 0.6; padding: 16px;">No historical data is available for this location.</p>';
+            ctx.style.display = 'none';
+            let noText = document.getElementById('noHistoryText');
+            if (!noText) {
+                noText = document.createElement('p');
+                noText.id = 'noHistoryText';
+                noText.style.cssText = 'opacity: 0.6; padding: 16px;';
+                noText.innerText = 'No historical data is available for this location.';
+                ctx.parentElement.appendChild(noText);
+            }
+            noText.style.display = 'block';
             return;
+        } else {
+            ctx.style.display = 'block';
+            const noText = document.getElementById('noHistoryText');
+            if (noText) noText.style.display = 'none';
         }
 
         const labels = historyData.map(h => {

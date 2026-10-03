@@ -2,8 +2,6 @@ const cacheService = require("./cacheService");
 const { executeQuery } = require("../db/database");
 const logger = require("../utils/logger");
 
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
-
 const fetchWithTimeout = async (url, options = {}, retries = 1, timeoutMs = 5000) => {
     try {
         const controller = new AbortController();
@@ -88,9 +86,9 @@ const fetchCurrentWeather = async (locationParam) => {
 
     let weatherUrl = "";
     if (typeof locationParam === 'string') {
-        weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(locationParam)}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+        weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(locationParam)}&appid=${process.env.OPENWEATHER_API_KEY}&units=metric`;
     } else {
-        weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${locationParam.lat}&lon=${locationParam.lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+        weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${locationParam.lat}&lon=${locationParam.lon}&appid=${process.env.OPENWEATHER_API_KEY}&units=metric`;
     }
     
     try {
@@ -99,7 +97,7 @@ const fetchCurrentWeather = async (locationParam) => {
         let airQualityData = null;
         if (rawData.coord && rawData.coord.lat && rawData.coord.lon) {
             try {
-                const aqiUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${rawData.coord.lat}&lon=${rawData.coord.lon}&appid=${OPENWEATHER_API_KEY}`;
+                const aqiUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${rawData.coord.lat}&lon=${rawData.coord.lon}&appid=${process.env.OPENWEATHER_API_KEY}`;
                 airQualityData = await fetchWithTimeout(aqiUrl, {}, 0, 3000); // Fail fast, don't break main if AQI fails
             } catch (aqiErr) {
                 logger.warn("Failed to fetch AQI", aqiErr);
@@ -125,9 +123,9 @@ const fetchForecast = async (locationParam) => {
 
     let url = "";
     if (typeof locationParam === 'string') {
-        url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(locationParam)}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+        url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(locationParam)}&appid=${process.env.OPENWEATHER_API_KEY}&units=metric`;
     } else {
-        url = `https://api.openweathermap.org/data/2.5/forecast?lat=${locationParam.lat}&lon=${locationParam.lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+        url = `https://api.openweathermap.org/data/2.5/forecast?lat=${locationParam.lat}&lon=${locationParam.lon}&appid=${process.env.OPENWEATHER_API_KEY}&units=metric`;
     }
     
     try {

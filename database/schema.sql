@@ -173,3 +173,233 @@ CREATE TABLE IF NOT EXISTS recommendation_history (
     weather_context_hash VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ==========================================
+-- PHASE 12: GIS, IoT, & Developer Platform
+-- ==========================================
+
+-- Organizations (Tenant Root) (Added conceptually in Phase 11, formalized here)
+CREATE TABLE IF NOT EXISTS organizations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'ACTIVE',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS organization_members (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    role VARCHAR(50) NOT NULL,
+    joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, organization_id)
+);
+
+-- Workspaces
+CREATE TABLE IF NOT EXISTS workspaces (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_workspaces_org ON workspaces(organization_id);
+
+-- API Keys
+CREATE TABLE IF NOT EXISTS api_keys (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    key_hash VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(100),
+    scopes JSONB,
+    last_used_at TIMESTAMP WITH TIME ZONE,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_api_keys_org ON api_keys(organization_id);
+
+-- Webhooks 2.0
+CREATE TABLE IF NOT EXISTS webhooks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE SET NULL,
+    url TEXT NOT NULL,
+    secret VARCHAR(255) NOT NULL,
+    event_types JSONB,
+    status VARCHAR(50) DEFAULT 'ACTIVE',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_webhooks_org ON webhooks(organization_id);
+
+-- IoT Devices
+CREATE TABLE IF NOT EXISTS devices (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE SET NULL,
+    name VARCHAR(255) NOT NULL,
+    device_type VARCHAR(100) NOT NULL,
+    mac_address VARCHAR(50),
+    status VARCHAR(50) DEFAULT 'OFFLINE',
+    last_seen TIMESTAMP WITH TIME ZONE,
+    firmware_version VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_devices_org ON devices(organization_id);
+
+-- IoT Telemetry
+CREATE TABLE IF NOT EXISTS device_telemetry (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    device_id UUID REFERENCES devices(id) ON DELETE CASCADE,
+    temperature DECIMAL(5,2),
+    humidity DECIMAL(5,2),
+    pressure DECIMAL(6,2),
+    wind_speed DECIMAL(5,2),
+    wind_dir INTEGER,
+    rain DECIMAL(5,2),
+    aqi INTEGER,
+    raw_payload JSONB,
+    quality_flag VARCHAR(20) DEFAULT 'VALID',
+    measured_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_telemetry_device_time ON device_telemetry(device_id, measured_at DESC);
+
+-- GIS Geofences (Fallback abstract, PostGIS prepared)
+CREATE TABLE IF NOT EXISTS geofences (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE SET NULL,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(50) DEFAULT 'POLYGON',
+    coordinates JSONB NOT NULL,
+    status VARCHAR(50) DEFAULT 'ACTIVE',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_geofences_org ON geofences(organization_id);
+
+-- ==========================================
+-- PHASE 13: Digital Twins & AI Agents
+-- ==========================================
+
+-- Digital Twin Entities
+CREATE TABLE IF NOT EXISTS digital_twins (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE SET NULL,
+    name VARCHAR(255) NOT NULL,
+    entity_type VARCHAR(100) NOT NULL, -- e.g., 'CAMPUS', 'BUILDING', 'FIELD'
+    metadata JSONB,
+    status VARCHAR(50) DEFAULT 'ACTIVE',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Hierarchical Twin Relationships
+CREATE TABLE IF NOT EXISTS twin_relationships (
+    parent_id UUID REFERENCES digital_twins(id) ON DELETE CASCADE,
+    child_id UUID REFERENCES digital_twins(id) ON DELETE CASCADE,
+    relationship_type VARCHAR(100) DEFAULT 'CONTAINS',
+    PRIMARY KEY (parent_id, child_id)
+);
+
+-- Twin State Snapshots (For Timeline and Baseline)
+CREATE TABLE IF NOT EXISTS twin_states (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    twin_id UUID REFERENCES digital_twins(id) ON DELETE CASCADE,
+    state_payload JSONB NOT NULL, -- Merged Weather + Telemetry + Alerts
+    recorded_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_twin_states_time ON twin_states(twin_id, recorded_at DESC);
+
+-- What-If Scenarios
+CREATE TABLE IF NOT EXISTS scenarios (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE SET NULL,
+    name VARCHAR(255) NOT NULL,
+    base_state JSONB NOT NULL,
+    offsets JSONB NOT NULL, -- e.g., {"temperature": 3, "rain": 20}
+    projected_impact JSONB,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Predictive Incidents
+CREATE TABLE IF NOT EXISTS incidents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE SET NULL,
+    twin_id UUID REFERENCES digital_twins(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    severity VARCHAR(50) NOT NULL,
+    status VARCHAR(50) DEFAULT 'POTENTIAL', -- WATCH, POTENTIAL, CONFIRMED, RESOLVED
+    evidence JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Incident Timelines (Event Replay)
+CREATE TABLE IF NOT EXISTS incident_timelines (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    incident_id UUID REFERENCES incidents(id) ON DELETE CASCADE,
+    event_type VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    actor VARCHAR(100) DEFAULT 'SYSTEM', -- e.g., 'AI_COPILOT', 'USER', 'SYSTEM'
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_incident_timeline_time ON incident_timelines(incident_id, timestamp ASC);
+
+-- ==========================================
+-- PHASE 14: Global Intelligence & Research
+-- ==========================================
+
+-- Federated Data Sources
+CREATE TABLE IF NOT EXISTS federated_sources (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    source_type VARCHAR(100) NOT NULL, -- e.g., 'API', 'DATABASE', 'RESEARCH_HUB'
+    connection_config JSONB,
+    health_status VARCHAR(50) DEFAULT 'UNKNOWN',
+    last_sync TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Datasets Catalog (Climate / ML / Research)
+CREATE TABLE IF NOT EXISTS datasets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    source_id UUID REFERENCES federated_sources(id) ON DELETE SET NULL,
+    time_range_start TIMESTAMP WITH TIME ZONE,
+    time_range_end TIMESTAMP WITH TIME ZONE,
+    license VARCHAR(100),
+    quality_score DECIMAL(5,2),
+    is_synthetic BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Research Workspace (Experiments & Reproducibility)
+CREATE TABLE IF NOT EXISTS experiments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    dataset_id UUID REFERENCES datasets(id) ON DELETE SET NULL,
+    name VARCHAR(255) NOT NULL,
+    hypothesis TEXT,
+    methodology JSONB,
+    results JSONB,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Privacy & Sharing Policies
+CREATE TABLE IF NOT EXISTS privacy_policies (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    resource_type VARCHAR(100) NOT NULL, -- e.g., 'DATASET', 'TWIN', 'REPORT'
+    resource_id UUID NOT NULL,
+    owner_organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    visibility VARCHAR(50) DEFAULT 'PRIVATE', -- PRIVATE, ORGANIZATION, PUBLIC
+    aggregation_rules JSONB, -- Defines how data must be obfuscated when shared
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
