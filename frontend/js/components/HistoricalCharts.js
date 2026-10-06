@@ -71,6 +71,10 @@ export const HistoricalCharts = {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
                 scales: {
                     x: { ticks: { color: textColor }, grid: { display: false } },
                     y: { 
@@ -79,11 +83,27 @@ export const HistoricalCharts = {
                     },
                     y1: {
                         type: 'linear', display: true, position: 'right',
-                        ticks: { color: textColor }, grid: { display: false }
+                        ticks: { color: textColor }, grid: { display: false },
+                        min: 0,
+                        suggestedMax: 10 // Prevent 0.4mm from filling the whole screen
                     }
                 },
                 plugins: {
-                    legend: { labels: { color: textColor } }
+                    legend: { labels: { color: textColor } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y;
+                                }
+                                return label;
+                            }
+                        }
+                    }
                 }
             }
         });

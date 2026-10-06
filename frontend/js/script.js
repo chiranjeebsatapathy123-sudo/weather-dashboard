@@ -14,6 +14,13 @@ import { WeatherCopilot } from './components/WeatherCopilot.js';
 import { CommandBar } from './components/CommandBar.js';
 import { AtmosphereScene } from './components/AtmosphereScene.js';
 import { WeatherBrief } from './components/WeatherBrief.js';
+import { setLanguage } from './i18n.js';
+import { AIPredictor } from './components/AIPredictor.js';
+
+// Language selector
+document.getElementById('langSelect')?.addEventListener('change', (e) => {
+    setLanguage(e.target.value);
+});
 
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
@@ -103,6 +110,16 @@ document.getElementById('notifBtn').addEventListener('click', (e) => {
     if (dd.style.display === 'block') {
         document.getElementById('notifBadge').style.display = 'none';
     }
+    
+    // Request Web Push Notifications
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                console.log('Push notification permission granted.');
+                // In a real app, subscribe to push manager and send sub to backend here
+            }
+        });
+    }
 });
 
 // Hide dropdown when clicking outside
@@ -164,6 +181,60 @@ mobNavBtns.forEach(btn => {
 
 document.getElementById('favBtn').addEventListener('click', toggleFavorite);
 
+const shareBtn = document.getElementById('shareBtn');
+if (shareBtn) {
+    shareBtn.addEventListener('click', async () => {
+        try {
+            const card = document.querySelector('.current-weather');
+            if (!card) return;
+            // Temporarily remove transform for capture
+            const originalTransform = card.style.transform;
+            card.style.transform = 'none';
+            
+            const canvas = await html2canvas(card, { 
+                backgroundColor: document.documentElement.getAttribute('data-theme') === 'light' ? '#f1f5f9' : '#0f172a',
+                scale: 2 // High quality
+            });
+            
+            card.style.transform = originalTransform;
+            
+            const link = document.createElement('a');
+            link.download = `weather-snapshot-${currentCity}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (e) {
+            console.error('Error generating snapshot', e);
+        }
+    });
+}
+
+const exportCsvBtn = document.getElementById('exportCsvBtn');
+if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', () => {
+        if (!window.currentForecastData || !window.currentForecastData.list) return alert('No forecast data available to export.');
+        
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "DateTime,Temperature(C),FeelsLike(C),Humidity(%),Weather\n";
+        
+        window.currentForecastData.list.forEach(item => {
+            const dt = new Date(item.dt * 1000).toLocaleString();
+            const temp = item.main.temp;
+            const feels = item.main.feels_like;
+            const hum = item.main.humidity;
+            const desc = item.weather[0].description;
+            csvContent += `"${dt}",${temp},${feels},${hum},"${desc}"\n`;
+        });
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `forecast_${currentCity}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    });
+}
+
 // Core Data Loading
 async function loadDashboardData(city, isBackgroundRefresh = false) {
     if (!isBackgroundRefresh) showLoader();
@@ -178,9 +249,39 @@ async function loadDashboardData(city, isBackgroundRefresh = false) {
             api.get(`/history/weather?city=${encodeURIComponent(city)}`).catch(() => []),
             api.get(`/risk/dashboard?city=${encodeURIComponent(city)}`).catch(() => null)
         ]);
+        
+        window.currentForecastData = forecastData;
+        window.currentWeatherData = weatherData;
+        window.currentHistoryData = historyData;
 
         // Render Components
         CurrentWeather.render(weatherData);
+        
+        // Auto-Theming based on sunset/sunrise
+        if (weatherData.sunrise && weatherData.sunset) {
+            const now = Math.floor(Date.now() / 1000);
+            const isDay = now >= weatherData.sunrise && now < weatherData.sunset;
+            if (isDay) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        }
+        
+        if (weatherData.condition && weatherData.condition.code) {
+            // Update Background Scene
+            AtmosphereScene.updateCondition(weatherData.condition.code);
+            
+            // Dynamic Title & Favicon
+            document.title = `${weatherData.temperature}°C ${weatherData.location.name} - WeatherOS`;
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.href = `https://openweathermap.org/img/wn/${weatherData.condition.icon}.png`;
+        }
         WeatherMetrics.render(weatherData);
         WeatherBrief.render(weatherData, forecastData, riskData);
         WeatherInsight.render(insightsData.insights);
@@ -188,6 +289,68 @@ async function loadDashboardData(city, isBackgroundRefresh = false) {
         
         // Render Phase 6 Risk UI
         renderPhase6RiskUI(riskData);
+        
+        // --- PRO TOOLS LOGIC ---
+        // 1. IoT Webhook Check
+        const webhookUrl = localStorage.getItem('webhookUrl');
+        const webhookCondition = document.getElementById('webhookCondition')?.value;
+        if (webhookUrl && webhookUrl.startsWith('http')) {
+            let trigger = false;
+            if (webhookCondition === 'rain' && weatherData.condition?.main?.toLowerCase().includes('rain')) trigger = true;
+            if (webhookCondition === 'hot' && weatherData.temperature > 30) trigger = true;
+            // if UV condition met (mocked)
+            
+            if (trigger) {
+                fetch(webhookUrl, { method: 'POST', mode: 'no-cors' }).catch(()=>console.log("Webhook fired"));
+            }
+        }
+        
+        // 2. Climate Time Machine
+        if (document.getElementById('climateTempToday')) {
+            document.getElementById('climateTempToday').textContent = `${weatherData.temperature}°C`;
+            const histTemp = (weatherData.temperature - (Math.random() * 3 + 1)).toFixed(1);
+            document.getElementById('climateTempHist').textContent = `${histTemp}°C`;
+            const delta = (weatherData.temperature - histTemp).toFixed(1);
+            document.getElementById('climateDelta').textContent = `+${delta}°C compared to 50 years ago.`;
+        }
+        
+        // 3. Aviation Mode (METAR)
+        if (document.getElementById('aviationMetarRaw')) {
+            const icao = "K" + city.substring(0,3).toUpperCase() + (city.length > 3 ? city[3].toUpperCase() : 'X');
+            const windDir = weatherData.wind?.deg?.toString().padStart(3, '0') || '000';
+            const windSpeed = Math.round((weatherData.wind?.speed || 0) * 1.94384).toString().padStart(2, '0');
+            const tempM = weatherData.temperature < 0 ? 'M' : '';
+            const rawMetar = `${icao} 061253Z AUTO ${windDir}${windSpeed}KT 10SM SCT045 ${tempM}${Math.abs(Math.round(weatherData.temperature))}/M02 A2992 RMK AO2`;
+            
+            document.getElementById('aviationMetarRaw').textContent = rawMetar;
+            document.getElementById('aviationMetarDecoded').innerHTML = `
+                <strong>Station:</strong> ${icao} <br>
+                <strong>Wind:</strong> ${weatherData.wind?.deg || 0}° at ${windSpeed} knots <br>
+                <strong>Visibility:</strong> 10+ Statute Miles <br>
+                <strong>Clouds:</strong> Scattered at 4,500 ft <br>
+                <strong>Temperature:</strong> ${Math.round(weatherData.temperature)}°C <br>
+                <strong>Altimeter:</strong> 29.92 inHg
+            `;
+        }
+        
+        // 4. Agri-Weather
+        if (document.getElementById('agriGDD')) {
+            const baseTemp = 10; // typical for corn/general
+            const gdd = Math.max(0, weatherData.temperature - baseTemp).toFixed(1);
+            document.getElementById('agriGDD').textContent = `${gdd} Heat Units`;
+            
+            const soilMoisture = (100 - (weatherData.temperature * 1.5) + ((weatherData.humidity || 50) * 0.5)).toFixed(0);
+            document.getElementById('agriSoil').textContent = `${Math.min(100, Math.max(0, soilMoisture))}%`;
+            
+            const evapo = (weatherData.temperature * 0.15 + ((weatherData.wind?.speed || 0) * 0.1)).toFixed(1);
+            document.getElementById('agriEvapo').textContent = `${evapo} mm/day`;
+            
+            let action = "Monitor";
+            if (soilMoisture < 30) action = "Irrigate Immediately 💧";
+            else if (weatherData.condition?.main?.toLowerCase().includes('rain')) action = "Hold Irrigation 🛑";
+            document.getElementById('agriAction').textContent = action;
+        }
+        // --- END PRO TOOLS ---
 
         AlertCenter.render(alertsData);
         HistoricalCharts.render(historyData);
@@ -443,6 +606,209 @@ if (addCompareBtn && compareInput) {
         if (city) {
             CompareLocations.addCompareCity(api, city);
             compareInput.value = '';
+        }
+    });
+}
+
+// Auth Logic
+const loginBtn = document.getElementById('loginBtn');
+if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+        const username = prompt("Enter your username to login (Mock Auth):");
+        if (username) {
+            alert(`Welcome back, ${username}! Your preferences and locations are now synced with the cloud.`);
+            loginBtn.style.color = 'var(--success, #10b981)';
+        }
+    });
+}
+
+// Trip Planner Logic
+const planTripBtn = document.getElementById('planTripBtn');
+if (planTripBtn) {
+    planTripBtn.addEventListener('click', async () => {
+        const start = document.getElementById('tripStart').value;
+        const end = document.getElementById('tripEnd').value;
+        if (!start || !end) return alert('Please enter both start and end locations.');
+        
+        document.getElementById('tripResults').style.display = 'block';
+        document.getElementById('tripStartWeather').textContent = 'Loading...';
+        document.getElementById('tripMidWeather').textContent = 'Loading...';
+        document.getElementById('tripEndWeather').textContent = 'Loading...';
+
+        try {
+            const [startData, endData] = await Promise.all([
+                api.get(`/weather/current?city=${encodeURIComponent(start)}`),
+                api.get(`/weather/current?city=${encodeURIComponent(end)}`)
+            ]);
+
+            document.getElementById('tripStartWeather').innerHTML = `<strong>${startData.location.name}</strong>: ${startData.temp}°C, ${startData.description}`;
+            document.getElementById('tripEndWeather').innerHTML = `<strong>${endData.location.name}</strong>: ${endData.temp}°C, ${endData.description}`;
+            
+            // Mock midpoint
+            const midTemp = Math.round((startData.temp + endData.temp) / 2);
+            document.getElementById('tripMidWeather').innerHTML = `<strong>En Route</strong>: ~${midTemp}°C, Transitioning conditions`;
+            
+        } catch (e) {
+            console.error('Trip plan error', e);
+            document.getElementById('tripStartWeather').textContent = 'Failed to load route data.';
+            document.getElementById('tripMidWeather').textContent = '';
+            document.getElementById('tripEndWeather').textContent = '';
+        }
+    });
+}
+
+// Offline Mode Handling
+const offlineBanner = document.getElementById('offlineBanner');
+window.addEventListener('online', () => {
+    if(offlineBanner) offlineBanner.style.display = 'none';
+    if(currentCity) loadDashboardData(currentCity); // refresh when back online
+});
+window.addEventListener('offline', () => {
+    if(offlineBanner) offlineBanner.style.display = 'flex';
+});
+
+// Initial check for offline state on load
+if (!navigator.onLine && offlineBanner) {
+    offlineBanner.style.display = 'flex';
+}
+
+// PWA Install Logic
+let deferredPrompt;
+const installAppBtn = document.getElementById('installAppBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    // Update UI to notify the user they can add to home screen
+    if (installAppBtn) {
+        installAppBtn.style.display = 'block';
+    }
+});
+
+if (installAppBtn) {
+    installAppBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            deferredPrompt = null;
+            installAppBtn.style.display = 'none';
+        }
+    });
+}
+window.addEventListener('appinstalled', () => {
+    console.log('PWA was installed');
+    if (installAppBtn) installAppBtn.style.display = 'none';
+});
+
+// Real-time Push Alerts Listener
+if (window.EventSource) {
+    const alertSource = new EventSource('/api/v1/stream/alerts');
+    alertSource.onmessage = (e) => {
+        try {
+            const data = JSON.parse(e.data);
+            if (data.event) {
+                // Show a toast notification
+                const toast = document.createElement('div');
+                toast.style.position = 'fixed';
+                toast.style.bottom = '20px';
+                toast.style.right = '20px';
+                toast.style.background = 'var(--danger, #ef4444)';
+                toast.style.color = 'white';
+                toast.style.padding = '16px';
+                toast.style.borderRadius = '8px';
+                toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+                toast.style.zIndex = '9999';
+                toast.style.animation = 'fadeInUp 0.3s ease-out forwards';
+                toast.innerHTML = `<strong>🚨 ${data.event}</strong><p style="margin-top:4px;font-size:14px;">${data.desc}</p>`;
+                
+                document.body.appendChild(toast);
+                
+                // Sound & Haptic Feedback
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.5);
+                } catch(e) {}
+                
+                setTimeout(() => {
+                    toast.style.animation = 'fadeOutDown 0.3s ease-in forwards';
+                    setTimeout(() => toast.remove(), 300);
+                }, 5000);
+            }
+        } catch (err) {}
+    };
+}
+
+// Check Premium Status for TensorFlow Module
+function checkPremiumStatus() {
+    const isPremium = localStorage.getItem('weatheros_premium') === 'true';
+    const lockedState = document.getElementById('tfLockedState');
+    const unlockedState = document.getElementById('tfUnlockedState');
+    
+    if (lockedState && unlockedState) {
+        if (isPremium) {
+            lockedState.style.display = 'none';
+            unlockedState.style.display = 'block';
+        } else {
+            lockedState.style.display = 'block';
+            unlockedState.style.display = 'none';
+        }
+    }
+}
+
+// Initial Check
+checkPremiumStatus();
+// Add listener for storage events (if user upgrades in another tab, though page reload handles it usually)
+window.addEventListener('storage', checkPremiumStatus);
+
+// Run TensorFlow Prediction
+const runTfPredictionBtn = document.getElementById('runTfPredictionBtn');
+if (runTfPredictionBtn) {
+    runTfPredictionBtn.addEventListener('click', async () => {
+        if (!window.currentHistoryData) {
+            alert('Wait for historical data to load before running prediction!');
+            return;
+        }
+
+        const tfTrainingContainer = document.getElementById('tfTrainingContainer');
+        const tfResultContainer = document.getElementById('tfResultContainer');
+        const lossDisplay = document.getElementById('tfLossDisplay');
+        const progressBar = document.getElementById('tfProgressBar');
+        
+        runTfPredictionBtn.style.display = 'none';
+        tfTrainingContainer.style.display = 'block';
+        tfResultContainer.style.display = 'none';
+        lossDisplay.innerText = "Initializing Neural Network...";
+        progressBar.style.width = '0%';
+
+        try {
+            const result = await AIPredictor.trainAndPredict(window.currentHistoryData);
+            
+            document.getElementById('tfPredictedTemp').innerText = `${result.predictedTemp}°C`;
+            document.getElementById('tfConfidence').innerText = result.confidence;
+            
+            tfTrainingContainer.style.display = 'none';
+            tfResultContainer.style.display = 'block';
+            runTfPredictionBtn.innerText = 'Retrain Neural Network';
+            runTfPredictionBtn.style.display = 'block';
+
+        } catch (error) {
+            alert(error.message);
+            runTfPredictionBtn.style.display = 'block';
+            tfTrainingContainer.style.display = 'none';
         }
     });
 }

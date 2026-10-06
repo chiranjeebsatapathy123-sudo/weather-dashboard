@@ -10,10 +10,11 @@ router.get("/", requireAuth, async (req, res, next) => {
         const userId = req.user.id;
         const history = await executeQuery(async (db) => {
             return await db`
-                SELECT city, searched_at AS "searchedAt" 
+                SELECT city, MAX(searched_at) AS "searchedAt" 
                 FROM search_history 
                 WHERE user_id = ${userId}
-                ORDER BY searched_at DESC 
+                GROUP BY city
+                ORDER BY "searchedAt" DESC 
                 LIMIT 10
             `;
         });

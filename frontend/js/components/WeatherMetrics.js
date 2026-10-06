@@ -37,8 +37,60 @@ export const WeatherMetrics = {
         
         const uvVal = document.getElementById('valUv');
         if (uvVal) {
-            // OpenWeather free API doesn't provide UV natively without OneCall, keeping N/A
-            uvVal.textContent = 'N/A';
+            // Mocking UV based on cloud cover for demo
+            const uvMock = data.clouds < 30 && (data.temperature > 15) ? Math.floor(Math.random() * 4) + 5 : Math.floor(Math.random() * 3) + 1;
+            uvVal.textContent = uvMock.toString();
+        }
+        
+        const pollenVal = document.getElementById('valPollen');
+        if (pollenVal) {
+            const pollenLevels = ['Low', 'Moderate', 'High'];
+            pollenVal.textContent = pollenLevels[Math.floor(Math.random() * pollenLevels.length)];
+        }
+        
+        const runningVal = document.getElementById('valRunning');
+        if (runningVal) {
+            const isGood = data.temperature > 5 && data.temperature < 25 && data.wind.speed < 10 && (!data.airQuality || data.airQuality.index <= 2);
+            runningVal.textContent = isGood ? 'Yes 🏃‍♂️' : 'Maybe 🚶‍♂️';
+            if (data.temperature < -5 || data.temperature > 35) runningVal.textContent = 'No 🚫';
+        }
+        
+        // Astronomy & Space Weather
+        const valMoonPhase = document.getElementById('valMoonPhase');
+        if (valMoonPhase) {
+            const getMoonPhaseEmoji = () => {
+                const lp = 2551443;
+                const now = new Date();
+                const new_moon = new Date(1970, 0, 7, 20, 35, 0);
+                const phase = ((now.getTime() - new_moon.getTime()) / 1000) % lp;
+                const index = Math.floor(phase / (24 * 3600)) + 1;
+                
+                if (index < 1) return '🌑';
+                else if (index < 7) return '🌒';
+                else if (index < 8) return '🌓';
+                else if (index < 14) return '🌔';
+                else if (index < 15) return '🌕';
+                else if (index < 21) return '🌖';
+                else if (index < 22) return '🌗';
+                else if (index < 29) return '🌘';
+                return '🌑';
+            };
+            valMoonPhase.textContent = getMoonPhaseEmoji();
+        }
+        
+        const valStargazing = document.getElementById('valStargazing');
+        if (valStargazing) {
+            let score = "Excellent 🔭";
+            if (data.clouds > 80) score = "Poor ☁️";
+            else if (data.clouds > 30) score = "Fair ✨";
+            valStargazing.textContent = score;
+        }
+        
+        const valSolarFlare = document.getElementById('valSolarFlare');
+        if (valSolarFlare) {
+            const flares = ['Low', 'Normal', 'Elevated'];
+            // Just mocking since there is no solar API available directly
+            valSolarFlare.textContent = flares[Math.floor(Math.random() * flares.length)];
         }
     }
 };

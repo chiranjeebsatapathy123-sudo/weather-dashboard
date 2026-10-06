@@ -19,6 +19,47 @@ export const WeatherCopilot = {
                 this.sendMessage();
             });
         });
+        
+        this.initSpeech();
+    },
+
+    initSpeech() {
+        this.micBtn = document.getElementById('micBtn');
+        if (!this.micBtn || !('webkitSpeechRecognition' in window)) {
+            if(this.micBtn) this.micBtn.style.display = 'none';
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.recognition = new SpeechRecognition();
+        this.recognition.continuous = false;
+        this.recognition.lang = 'en-US';
+
+        this.recognition.onstart = () => {
+            this.micBtn.style.color = 'var(--danger, #ef4444)';
+        };
+
+        this.recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            this.aiInput.value = transcript;
+            this.sendMessage();
+        };
+
+        this.recognition.onend = () => {
+            this.micBtn.style.color = 'var(--text-secondary, #94a3b8)';
+        };
+
+        this.micBtn.addEventListener('click', () => {
+            this.recognition.start();
+        });
+    },
+
+    speak(text) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.rate = 1.0;
+        window.speechSynthesis.speak(msg);
     },
 
     appendMessage(text, sender, meta = null) {
@@ -68,10 +109,13 @@ export const WeatherCopilot = {
             
             loadingDiv.remove();
             this.appendMessage(data.answer, 'ai', data);
+            this.speak(data.answer);
 
         } catch (error) {
             loadingDiv.remove();
-            this.appendMessage("I couldn't verify that response against the current weather data. Please try again later.", 'ai');
+            const fallback = "I couldn't verify that response against the current weather data. Please try again later.";
+            this.appendMessage(fallback, 'ai');
+            this.speak(fallback);
         }
     }
 };

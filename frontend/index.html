@@ -9,14 +9,28 @@
     <meta name="theme-color" content="#0f172a">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/assets/icon-192x192.png">
+    
+    <style>
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOutDown {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(20px); }
+        }
+    </style>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- html2canvas for Snapshots -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 
     <!-- Leaflet Map -->
@@ -26,12 +40,19 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <!-- Dynamic Animated Background -->
+    <div class="ambient-background" id="ambientBg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+    
     <div class="app-container" id="app">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="brand">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-                <span>Weather Intelligence</span>
+                <span data-i18n="app_title">Weather Intelligence</span>
             </div>
             <nav class="nav-links">
                 <button class="nav-btn active" data-target="dashboard">
@@ -46,6 +67,10 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                     Alerts
                 </button>
+                <button class="nav-btn" data-target="trip">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    Trip Planner
+                </button>
                 <button class="nav-btn" data-target="map">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"></polygon><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
                     Map
@@ -57,6 +82,23 @@
                 <button class="nav-btn" data-target="compare">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                     Compare
+                </button>
+                <div style="margin: 15px 0 5px 15px; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 1px;">Pro Tools</div>
+                <button class="nav-btn" data-target="iot">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+                    Smart Home
+                </button>
+                <button class="nav-btn" data-target="climate">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    Time Machine
+                </button>
+                <button class="nav-btn" data-target="aviation">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.7l-1.2 3.3c-.1.3 0 .7.3.9l5.5 3.6-3.4 3.4-2.8-.9c-.3-.1-.6 0-.8.2l-1.1 1.1c-.2.2-.2.6 0 .8l4 2.8 2.8 4c.2.2.6.2.8 0l1.1-1.1c.2-.2.3-.5.2-.8l-.9-2.8 3.4-3.4 3.6 5.5c.2.3.6.4.9.3l3.3-1.2c.5-.2.8-.6.7-1.1z"></path></svg>
+                    Aviation
+                </button>
+                <button class="nav-btn" data-target="agri">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 4 13c0-3.9 3.1-7 7-7s7 3.1 7 7a7 7 0 0 1-7 7z"></path><path d="M11 6v14"></path><path d="M11 11h4"></path><path d="M11 15h3"></path></svg>
+                    Agriculture
                 </button>
                 <button class="nav-btn" data-target="ai">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
@@ -80,10 +122,20 @@
             <header class="top-header">
                 <div class="search-bar">
                     <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <input type="text" id="searchInput" placeholder="Search for a city..." autocomplete="off">
+                    <input type="text" id="searchInput" placeholder="Search for a city..." autocomplete="off" data-i18n="search_placeholder">
                 </div>
-                <button id="locationBtn" class="nav-btn" style="width: auto;" aria-label="Use my location">📍 Use my location</button>
+                <button id="locationBtn" class="nav-btn" style="width: auto;" aria-label="Use my location" data-i18n="use_location">📍 Use my location</button>
                 <div class="header-actions">
+                    <select id="langSelect" style="background: rgba(255,255,255,0.1); color: var(--text-primary); border: 1px solid var(--card-border); border-radius: 6px; padding: 6px; font-family: inherit;">
+                        <option value="en">🇺🇸 EN</option>
+                        <option value="es">🇪🇸 ES</option>
+                        <option value="fr">🇫🇷 FR</option>
+                    </select>
+                    <button class="nav-btn" id="installAppBtn" style="display: none; width: auto; background: var(--accent); color: white;" title="Install App" data-i18n="install_app">⬇️ Install App</button>
+                    <button class="nav-btn" id="upgradeProBtn" style="width: auto; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: white; border: none; font-weight: bold; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);" onclick="document.getElementById('upgradeModal').style.display='flex'">✨ Upgrade to Pro</button>
+                    <button class="icon-btn" id="loginBtn" aria-label="Login / Sync" title="Login / Sync">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </button>
                     <div style="position: relative;">
                         <button class="icon-btn" id="notifBtn" aria-label="Notifications">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
@@ -118,6 +170,11 @@
                 <div class="spinner"></div>
             </div>
             
+            <div id="offlineBanner" class="error-banner" style="display: none; background: var(--warning, #f59e0b); color: #000;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.7 17l-2-2"></path><path d="M14.3 17l2-2"></path><path d="M2.9 2.9l18.2 18.2"></path><path d="M8.5 8.5C5.8 9.5 3.3 11.2 1.4 13.5"></path><path d="M12.9 8.3C15.6 7.8 18.6 8.3 21 10"></path></svg>
+                <span>You are currently offline. Showing cached data.</span>
+            </div>
+            
             <div id="errorMessage" class="error-banner" style="display: none;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                 <span id="errorText">Error loading data.</span>
@@ -128,7 +185,7 @@
             <div id="view-dashboard" class="view-section active">
                 
                 <!-- WHAT MATTERS NOW Panel (Phase 6) -->
-                <section class="glass-card risk-panel" id="riskPanel" style="display: none; border-left: 4px solid var(--accent); margin-bottom: 24px;">
+                <section class="glass-card risk-panel animate-in stagger-1" id="riskPanel" style="display: none; border-left: 4px solid var(--accent); margin-bottom: 24px;">
                     <div class="card-header" style="margin-bottom: 8px;">
                         <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent);">What Matters Now</h2>
                     </div>
@@ -139,15 +196,23 @@
 
                 <div class="dashboard-grid">
                     <!-- Current Weather -->
-                    <section class="glass-card current-weather">
+                    <section class="glass-card current-weather animate-in stagger-1">
                         <div class="weather-top">
                             <div>
                                 <h1 id="cityName">--</h1>
                                 <p id="weatherDesc" class="weather-desc">--</p>
                             </div>
-                            <button id="favBtn" class="icon-btn" aria-label="Favorite">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            </button>
+                            <div style="display: flex; gap: 8px;">
+                                <button id="exportCsvBtn" class="icon-btn" aria-label="Export CSV" title="Export CSV">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                </button>
+                                <button id="shareBtn" class="icon-btn" aria-label="Share Snapshot" title="Share Snapshot">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                                </button>
+                                <button id="favBtn" class="icon-btn" aria-label="Favorite">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                </button>
+                            </div>
                         </div>
                         <div class="weather-main-data">
                             <img id="weatherIcon" src="" alt="" style="display:none;" class="large-icon">
@@ -165,7 +230,7 @@
                     </section>
 
                     <!-- Personal Weather Brief Panel -->
-                    <section class="glass-card insights-panel">
+                    <section class="glass-card insights-panel animate-in stagger-2">
                         <div class="card-header">
                             <h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Personal Weather Brief</h2>
                         </div>
@@ -179,7 +244,7 @@
                     </section>
 
                     <!-- Best Time Today Panel -->
-                    <section class="glass-card best-time-panel" id="bestTimePanel">
+                    <section class="glass-card best-time-panel animate-in stagger-3" id="bestTimePanel">
                         <h4>Your Plan</h4>
                         <div id="planContent" style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
                             <!-- Phase 6 Activity Risk Windows populated here -->
@@ -188,7 +253,7 @@
                     </section>
 
                     <!-- Environmental Stats -->
-                    <section class="glass-card env-stats">
+                    <section class="glass-card env-stats animate-in stagger-4">
                         <div class="stat-grid">
                             <div class="stat-box">
                                 <span class="stat-label">Humidity</span>
@@ -225,6 +290,34 @@
                             <div class="stat-box">
                                 <span class="stat-label">Sunset</span>
                                 <span class="stat-val" id="valSunset">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Pollen</span>
+                                <span class="stat-val" id="valPollen">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Running?</span>
+                                <span class="stat-val" id="valRunning">--</span>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <section class="glass-card env-stats animate-in stagger-3" style="margin-top: 20px;">
+                        <div class="card-header">
+                            <h2>✨ Space Weather & Astronomy</h2>
+                        </div>
+                        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));">
+                            <div class="stat-box">
+                                <span class="stat-label">Moon Phase</span>
+                                <span class="stat-val" id="valMoonPhase" style="font-size: 24px;">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Stargazing Index</span>
+                                <span class="stat-val" id="valStargazing">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Solar Activity</span>
+                                <span class="stat-val" id="valSolarFlare">Low</span>
                             </div>
                         </div>
                     </section>
@@ -290,7 +383,18 @@
             <!-- Map View -->
             <div id="view-map" class="view-section" style="display: none;">
                 <section class="glass-card map-panel">
-                    <div id="weatherMap" style="height: 600px; width: 100%; border-radius: 12px; z-index: 1;"></div>
+                    <div style="position: relative; width: 100%; height: 600px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        <div id="weatherMap" style="height: 100%; width: 100%; z-index: 1;"></div>
+                        <canvas id="weatherParticleCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; pointer-events: none;"></canvas>
+                        
+                        <!-- 3D Particle Controls -->
+                        <div style="position: absolute; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 8px; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <span style="color: white; font-size: 0.8rem; display: flex; align-items: center; margin-right: 5px;">3D Effects:</span>
+                            <button onclick="window.currentWeatherData = {condition: 'rain'}; import('./js/components/WeatherMap.js').then(m => m.WeatherMap.render(window.currentWeatherData.coordinates?.lat || 40.71, window.currentWeatherData.coordinates?.lon || -74.00, window.currentWeatherData.city || 'New York'))" style="background: rgba(59, 130, 246, 0.5); border: 1px solid #3b82f6; color: white; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem;">🌧️ Rain</button>
+                            <button onclick="window.currentWeatherData = {condition: 'snow'}; import('./js/components/WeatherMap.js').then(m => m.WeatherMap.render(window.currentWeatherData.coordinates?.lat || 40.71, window.currentWeatherData.coordinates?.lon || -74.00, window.currentWeatherData.city || 'New York'))" style="background: rgba(255, 255, 255, 0.2); border: 1px solid white; color: white; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem;">❄️ Snow</button>
+                            <button onclick="window.currentWeatherData = {condition: 'clear'}; import('./js/components/WeatherMap.js').then(m => m.WeatherMap.render(window.currentWeatherData.coordinates?.lat || 40.71, window.currentWeatherData.coordinates?.lon || -74.00, window.currentWeatherData.city || 'New York'))" style="background: rgba(245, 158, 11, 0.5); border: 1px solid #f59e0b; color: white; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem;">☀️ Clear</button>
+                        </div>
+                    </div>
                 </section>
             </div>
 
@@ -325,14 +429,52 @@
                     <div class="chat-window" id="chatWindow">
                         <div class="chat-message ai">Hi! I'm your Weather Intelligence assistant. Ask me anything about the weather.</div>
                     </div>
-                    <div class="chat-input-area">
-                        <input type="text" id="aiInput" placeholder="Ask about your weather..." autocomplete="off">
+                    <div class="chat-input-area" style="position: relative;">
+                        <input type="text" id="aiInput" placeholder="Ask about your weather..." autocomplete="off" style="padding-right: 40px; flex: 1; width: 100%;">
+                        <button id="micBtn" class="icon-btn" style="position: absolute; right: 90px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-secondary); width: 30px; height: 30px;" title="Speak">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                        </button>
                         <button id="aiSendBtn" class="nav-btn active" style="width: auto; justify-content: center; padding: 14px 24px;">Ask</button>
                     </div>
                     <div class="suggested-prompts">
                         <button class="prompt-btn">Will it rain today?</button>
                         <button class="prompt-btn">Best time to go outside?</button>
                         <button class="prompt-btn">Should I carry an umbrella?</button>
+                    </div>
+
+                    <div style="margin-top: 30px; border-top: 1px solid var(--card-border); padding-top: 20px;">
+                        <h3 style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                            Neural Network Predictor
+                            <span style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: white; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">PRO</span>
+                        </h3>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;">Train a TensorFlow.js model in your browser using local historical data to predict tomorrow's temperature.</p>
+                        
+                        <div id="tfLockedState" style="background: rgba(139, 92, 246, 0.1); border: 1px dashed #8b5cf6; padding: 20px; border-radius: 12px; text-align: center;">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" style="margin-bottom: 10px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            <div style="font-weight: bold; margin-bottom: 10px;">WeatherOS Pro Required</div>
+                            <button class="btn-primary" onclick="document.getElementById('upgradeModal').style.display='flex'" style="background: #8b5cf6; font-size: 0.9rem; padding: 10px 20px;">Upgrade Now</button>
+                        </div>
+
+                        <div id="tfUnlockedState" style="display: none; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); padding: 20px; border-radius: 12px;">
+                            <button id="runTfPredictionBtn" class="btn-primary" style="background: #10b981; width: 100%; margin-bottom: 15px;">Run Neural Training</button>
+                            
+                            <div id="tfTrainingContainer" style="display: none;">
+                                <div style="display: flex; justify-content: space-between; font-family: monospace; font-size: 0.8rem; margin-bottom: 5px;">
+                                    <span id="tfLossDisplay">Initializing Model...</span>
+                                    <span>Adam Optimizer (lr=0.05)</span>
+                                </div>
+                                <div style="width: 100%; background: var(--bg-primary); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+                                    <div id="tfProgressBar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.1s;"></div>
+                                </div>
+                            </div>
+                            
+                            <div id="tfResultContainer" style="display: none; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase;">Predicted Temperature Tomorrow</div>
+                                <div id="tfPredictedTemp" style="font-size: 2.5rem; font-weight: bold; color: #10b981; margin: 10px 0;">--°C</div>
+                                <div style="font-family: monospace; font-size: 0.8rem; color: #8b949e;">Confidence Score: <span id="tfConfidence" style="color: #a5d6ff;">--</span>%</div>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -391,6 +533,128 @@
                     </div>
                 </section>
             </div>
+            
+            <!-- Trip Planner View -->
+            <div id="view-trip" class="view-section" style="display: none;">
+                <header class="card-header" style="margin-bottom: 24px;">
+                    <h2>Trip Weather Planner</h2>
+                    <p style="color: var(--text-secondary); font-size: 14px;">Plan your route and see weather conditions along the way.</p>
+                </header>
+                
+                <section class="glass-card animate-in stagger-1">
+                    <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                        <input type="text" id="tripStart" placeholder="Starting location (e.g. New York)" style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--card-border); background: rgba(0,0,0,0.2); color: white;">
+                        <input type="text" id="tripEnd" placeholder="Destination (e.g. Boston)" style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--card-border); background: rgba(0,0,0,0.2); color: white;">
+                        <button id="planTripBtn" class="nav-btn" style="width: auto; background: var(--accent); color: white;">Plan Trip</button>
+                    </div>
+                    
+                    <div id="tripResults" style="display: none;">
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div style="padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; border-left: 4px solid var(--success);">
+                                <h4>Departure</h4>
+                                <p id="tripStartWeather" style="margin-top: 8px;">Loading...</p>
+                            </div>
+                            <div style="padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; border-left: 4px solid var(--warning);">
+                                <h4>Midpoint (Estimated)</h4>
+                                <p id="tripMidWeather" style="margin-top: 8px;">Loading...</p>
+                            </div>
+                            <div style="padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; border-left: 4px solid var(--danger);">
+                                <h4>Arrival</h4>
+                                <p id="tripEndWeather" style="margin-top: 8px;">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Pro Tools: Smart Home Webhooks -->
+            <div id="view-iot" class="view-section" style="display: none;">
+                <header class="card-header" style="margin-bottom: 24px;">
+                    <h2>Smart Home Webhooks</h2>
+                    <p style="color: var(--text-secondary); font-size: 14px;">Trigger external services when weather conditions change.</p>
+                </header>
+                <section class="glass-card animate-in stagger-1">
+                    <p style="margin-bottom: 15px;">Configure a webhook URL to ping when specific conditions are met.</p>
+                    <input type="text" id="webhookUrl" class="form-input" placeholder="https://maker.ifttt.com/trigger/..." style="margin-bottom: 15px;">
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <select id="webhookCondition" class="form-select" style="flex: 1;">
+                            <option value="rain">If it starts raining</option>
+                            <option value="hot">If Temp > 30°C</option>
+                            <option value="uv">If UV > 8</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="alert('Webhook configuration saved!'); localStorage.setItem('webhookUrl', document.getElementById('webhookUrl').value);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        Save Webhook
+                    </button>
+                </section>
+            </div>
+
+            <!-- Pro Tools: Climate Time Machine -->
+            <div id="view-climate" class="view-section" style="display: none;">
+                <header class="card-header" style="margin-bottom: 24px;">
+                    <h2>Climate Time Machine</h2>
+                    <p style="color: var(--text-secondary); font-size: 14px;">Compare today's temperature against the historical 50-year average.</p>
+                </header>
+                <section class="glass-card animate-in stagger-1" style="text-align: center; padding: 40px 20px;">
+                    <div id="climateComparison" style="display: flex; justify-content: space-around; align-items: center;">
+                        <div>
+                            <h3 style="color: var(--text-secondary);">Today</h3>
+                            <div id="climateTempToday" style="font-size: 3rem; font-weight: bold; color: var(--accent);">--°C</div>
+                        </div>
+                        <div style="font-size: 2rem; color: var(--danger);">VS</div>
+                        <div>
+                            <h3 style="color: var(--text-secondary);">1974 Average</h3>
+                            <div id="climateTempHist" style="font-size: 3rem; font-weight: bold; color: var(--text-primary);">--°C</div>
+                        </div>
+                    </div>
+                    <p id="climateDelta" style="margin-top: 20px; font-size: 1.2rem; color: var(--danger);"></p>
+                </section>
+            </div>
+
+            <!-- Pro Tools: Aviation Mode -->
+            <div id="view-aviation" class="view-section" style="display: none;">
+                <header class="card-header" style="margin-bottom: 24px;">
+                    <h2>Aviation Weather (METAR)</h2>
+                    <p style="color: var(--text-secondary); font-size: 14px;">Raw METAR strings and technical analysis for the nearest airport.</p>
+                </header>
+                <section class="glass-card animate-in stagger-1">
+                    <h3 style="margin-bottom: 10px;">Latest METAR Report</h3>
+                    <div id="aviationMetarRaw" style="font-family: monospace; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 8px; font-size: 1.1rem; color: #a5d6ff; letter-spacing: 1px;">
+                        Loading METAR data...
+                    </div>
+                    <div id="aviationMetarDecoded" style="margin-top: 20px; font-size: 0.95rem; line-height: 1.6; opacity: 0.8;">
+                    </div>
+                </section>
+            </div>
+
+            <!-- Pro Tools: Agriculture -->
+            <div id="view-agri" class="view-section" style="display: none;">
+                <header class="card-header" style="margin-bottom: 24px;">
+                    <h2>Agri-Weather Dashboard</h2>
+                    <p style="color: var(--text-secondary); font-size: 14px;">Farming metrics, Growing Degree Days, and Soil Estimates.</p>
+                </header>
+                <section class="glass-card animate-in stagger-1">
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <span class="stat-label">Growing Degree Days (GDD)</span>
+                            <span class="stat-val" id="agriGDD">--</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Est. Soil Moisture</span>
+                            <span class="stat-val" id="agriSoil">--</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Evapotranspiration</span>
+                            <span class="stat-val" id="agriEvapo">--</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Action</span>
+                            <span class="stat-val" id="agriAction" style="color: var(--accent);">--</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
 
         </main>
     </div>
@@ -417,8 +681,78 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
             <span>AI Chat</span>
         </button>
+        <button class="mob-nav-btn" data-target="iot">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+            <span>IoT</span>
+        </button>
+        <button class="mob-nav-btn" data-target="climate">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>Time</span>
+        </button>
+        <button class="mob-nav-btn" data-target="aviation">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.7l-1.2 3.3c-.1.3 0 .7.3.9l5.5 3.6-3.4 3.4-2.8-.9c-.3-.1-.6 0-.8.2l-1.1 1.1c-.2.2-.2.6 0 .8l4 2.8 2.8 4c.2.2.6.2.8 0l1.1-1.1c.2-.2.3-.5.2-.8l-.9-2.8 3.4-3.4 3.6 5.5c.2.3.6.4.9.3l3.3-1.2c.5-.2.8-.6.7-1.1z"></path></svg>
+            <span>Aviation</span>
+        </button>
+        <button class="mob-nav-btn" data-target="agri">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 4 13c0-3.9 3.1-7 7-7s7 3.1 7 7a7 7 0 0 1-7 7z"></path><path d="M11 6v14"></path><path d="M11 11h4"></path><path d="M11 15h3"></path></svg>
+            <span>Agri</span>
+        </button>
     </nav>
 
+    <!-- Premium Upgrade Modal (Stripe Mock) -->
+    <div id="upgradeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 9999; justify-content: center; align-items: center;">
+        <div style="background: var(--bg-primary); border: 1px solid var(--card-border); padding: 40px; border-radius: 20px; max-width: 450px; width: 90%; box-shadow: 0 25px 50px rgba(0,0,0,0.5); text-align: center; position: relative;">
+            <button onclick="document.getElementById('upgradeModal').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.5rem;">&times;</button>
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border-radius: 15px; margin: 0 auto 20px auto; display: flex; align-items: center; justify-content: center;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </div>
+            <h2 style="margin-bottom: 10px; font-size: 1.8rem; color: var(--text-primary);">WeatherOS Pro</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 30px; font-size: 0.95rem;">Unlock Neural Network Predictions (TensorFlow.js), Ad-Free tracking, and full Historical exports.</p>
+            
+            <div style="border: 2px solid #8b5cf6; border-radius: 12px; padding: 20px; margin-bottom: 30px; position: relative;">
+                <span style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #8b5cf6; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">Most Popular</span>
+                <div style="font-size: 2.5rem; font-weight: bold; color: var(--text-primary);">$4.99<span style="font-size: 1rem; color: var(--text-secondary); font-weight: normal;"> / mo</span></div>
+            </div>
+            
+            <button id="stripeCheckoutBtn" class="btn-primary" style="width: 100%; padding: 16px; font-size: 1.1rem; background: #635bff; display: flex; justify-content: center; gap: 10px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Pay with Stripe
+            </button>
+            <div id="stripeLoader" style="display: none; margin-top: 15px; color: var(--text-secondary); font-family: monospace;">Processing payment...</div>
+        </div>
+    </div>
+
+    <!-- TensorFlow.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+
     <script src="js/script.js" type="module"></script>
+    <script type="module">
+        // Inject Premium Checkout Logic
+        document.getElementById('stripeCheckoutBtn').addEventListener('click', () => {
+            const btn = document.getElementById('stripeCheckoutBtn');
+            const loader = document.getElementById('stripeLoader');
+            btn.style.opacity = '0.5';
+            btn.style.pointerEvents = 'none';
+            btn.innerText = 'Redirecting...';
+            loader.style.display = 'block';
+            
+            // Mock Stripe Delay
+            setTimeout(() => {
+                localStorage.setItem('weatheros_premium', 'true');
+                alert("Payment Successful! Welcome to WeatherOS Pro.");
+                window.location.reload();
+            }, 2500);
+        });
+
+        // Hide Upgrade button if already premium
+        if (localStorage.getItem('weatheros_premium') === 'true') {
+            const btn = document.getElementById('upgradeProBtn');
+            if (btn) {
+                btn.innerHTML = '✨ Pro Active';
+                btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                btn.style.pointerEvents = 'none';
+            }
+        }
+    </script>
 </body>
 </html>
