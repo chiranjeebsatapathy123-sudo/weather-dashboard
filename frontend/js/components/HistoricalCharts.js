@@ -1,11 +1,15 @@
 let chartInstance = null;
+let lastHistoryData = null;
 
 export const HistoricalCharts = {
     render(historyData) {
+        if (historyData) lastHistoryData = historyData;
+        const dataToRender = historyData || lastHistoryData;
+
         const ctx = document.getElementById('historyChart');
         if (!ctx) return;
 
-        if (!historyData || historyData.length === 0) {
+        if (!dataToRender || dataToRender.length === 0) {
             ctx.style.display = 'none';
             let noText = document.getElementById('noHistoryText');
             if (!noText) {
@@ -23,22 +27,25 @@ export const HistoricalCharts = {
             if (noText) noText.style.display = 'none';
         }
 
-        const labels = historyData.map(h => {
+        const labels = dataToRender.map(h => {
             const d = new Date(h.date);
             return d.toLocaleDateString([], { weekday: 'short' });
         });
         
-        const tempHigh = historyData.map(h => h.tempHigh);
-        const tempLow = historyData.map(h => h.tempLow);
-        const precip = historyData.map(h => h.precipitation);
+        const tempHigh = dataToRender.map(h => h.tempHigh);
+        const tempLow = dataToRender.map(h => h.tempLow);
+        const precip = dataToRender.map(h => h.precipitation);
 
-        const isDark = document.body.getAttribute('data-theme') !== 'light';
+        const currentTheme = document.documentElement.getAttribute('data-theme') || document.body.getAttribute('data-theme');
+        const isDark = currentTheme !== 'light';
         const textColor = isDark ? '#f8fafc' : '#0f172a';
         const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
         if (chartInstance) {
             chartInstance.destroy();
         }
+
+        if (typeof Chart === 'undefined') return;
 
         chartInstance = new Chart(ctx.getContext('2d'), {
             type: 'line',
@@ -85,7 +92,7 @@ export const HistoricalCharts = {
                         type: 'linear', display: true, position: 'right',
                         ticks: { color: textColor }, grid: { display: false },
                         min: 0,
-                        suggestedMax: 10 // Prevent 0.4mm from filling the whole screen
+                        suggestedMax: 10
                     }
                 },
                 plugins: {
@@ -109,3 +116,9 @@ export const HistoricalCharts = {
         });
     }
 };
+
+window.addEventListener('resize', () => {
+    if (lastHistoryData) {
+        HistoricalCharts.render(lastHistoryData);
+    }
+});

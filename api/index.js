@@ -20,6 +20,7 @@ const intelligenceRoutes = require('./routes/intelligence');
 const operationsRoutes = require('./routes/operations');
 const aiControlPlaneRoutes = require('./routes/ai/index');
 const platformRoutes = require('./routes/platform');
+const compositeRoutes = require('./routes/composite');
 
 const app = express();
 
@@ -48,6 +49,7 @@ v1Router.use('/intelligence', intelligenceRoutes);
 v1Router.use('/operations', operationsRoutes);
 v1Router.use('/ai-control-plane', aiControlPlaneRoutes);
 v1Router.use('/platform', platformRoutes);
+v1Router.use('/composite', apiCache(300), compositeRoutes);
 
 // Real-time Push Alerts (Server-Sent Events)
 v1Router.get('/stream/alerts', (req, res) => {

@@ -3,14 +3,13 @@ const { validateLocationQuery } = require('../middleware/validation');
 const { optionalAuth } = require('../middleware/auth');
 const { successResponse, errorResponse } = require('../utils/response');
 
-// Import services directly to avoid internal HTTP calls
-const { fetchCurrentWeather } = require('../services/weatherService');
-// Assume we have other services, but for simplicity we will just make internal API calls or use the services
-const forecastService = require('../services/forecastService');
-const insightsService = require('../services/insightsService');
-const alertsService = require('../services/alertsService');
-const historyService = require('../services/historyService');
-const riskService = require('../services/riskService');
+const { fetchCurrentWeather, fetchForecast } = require('../services/weatherService');
+const { generateInsights } = require('../services/insightsService');
+const { generateSmartNotices, fetchProviderAlerts } = require('../services/alertService');
+const { fetchHistoricalWeather } = require('../services/historyService');
+const { evaluateActivityRisk } = require('../services/risk/riskEngine');
+const { findOptimalWindows } = require('../services/recommendation/weatherWindowService');
+const { detectForecastChanges } = require('../services/prediction/predictionService');
 
 const router = express.Router();
 
@@ -18,27 +17,61 @@ router.get('/dashboard', optionalAuth, validateLocationQuery, async (req, res, n
     try {
         const location = req.validatedLocation.city || req.validatedLocation;
         
-        // Execute all promises concurrently
-        const [weather, forecast, insights, alerts, history, risk] = await Promise.allSettled([
+        // 1. Fetch base weather & forecast concurrently
+        const [weatherResult, forecastResult] = await Promise.allSettled([
             fetchCurrentWeather(location),
-            forecastService?.fetchForecast ? forecastService.fetchForecast(location) : Promise.resolve(null),
-            insightsService?.generateInsights ? insightsService.generateInsights(location) : Promise.resolve({ insights: [] }),
-            alertsService?.fetchAlerts ? alertsService.fetchAlerts(location) : Promise.resolve([]),
-            historyService?.fetchHistory ? historyService.fetchHistory(location) : Promise.resolve([]),
-            riskService?.fetchRisk ? riskService.fetchRisk(location) : Promise.resolve(null)
+            fetchForecast(location)
         ]);
-        
-        if (weather.status === 'rejected') {
-            throw weather.reason; // Weather is required
+
+        if (weatherResult.status === 'rejected') {
+            throw weatherResult.reason;
         }
 
+        const weather = weatherResult.value;
+        const forecast = forecastResult.status === 'fulfilled' ? forecastResult.value : null;
+
+        // 2. Fetch/compute derived data: alerts, history concurrently
+        const lat = weather.coordinates?.lat || (typeof location === 'object' ? location.lat : null);
+        const lon = weather.coordinates?.lon || (typeof location === 'object' ? location.lon : null);
+
+        const [alertsResult, historyResult] = await Promise.allSettled([
+            (async () => {
+                let providerAlerts = [];
+                if (lat && lon) {
+                    providerAlerts = await fetchProviderAlerts(lat, lon).catch(() => []);
+                }
+                const smartNotices = generateSmartNotices(weather, forecast);
+                return [...providerAlerts, ...smartNotices];
+            })(),
+            (async () => {
+                if (lat && lon) {
+                    return await fetchHistoricalWeather(lat, lon, 7);
+                }
+                return [];
+            })()
+        ]);
+
+        const insights = generateInsights(weather);
+
+        // Risk computation
+        const activities = ['Walking', 'Cycling', 'Photography'];
+        const activityRisks = activities.map(act => evaluateActivityRisk(act, weather));
+        const optimalWindows = findOptimalWindows('Walking', forecast ? forecast.list : []);
+        const forecastChange = detectForecastChanges(location, forecast);
+
+        const risk = {
+            activityRisks,
+            optimalWindows,
+            forecastChange
+        };
+
         const data = {
-            weather: weather.value,
-            forecast: forecast.status === 'fulfilled' ? forecast.value : null,
-            insights: insights.status === 'fulfilled' ? insights.value : { insights: [] },
-            alerts: alerts.status === 'fulfilled' ? alerts.value : [],
-            history: history.status === 'fulfilled' ? history.value : [],
-            risk: risk.status === 'fulfilled' ? risk.value : null,
+            weather,
+            forecast,
+            insights: insights.insights,
+            alerts: alertsResult.status === 'fulfilled' ? alertsResult.value : [],
+            history: historyResult.status === 'fulfilled' ? historyResult.value : [],
+            risk
         };
 
         return successResponse(res, data, { source: "compositeService" });

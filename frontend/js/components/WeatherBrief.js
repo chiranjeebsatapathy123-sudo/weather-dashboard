@@ -3,9 +3,12 @@ export const WeatherBrief = {
         const container = document.getElementById('weatherBriefContent');
         if (!container || !weatherData) return;
 
+        const currentHour = new Date().getHours();
+        const greeting = currentHour < 12 ? 'Good Morning' : (currentHour < 18 ? 'Good Afternoon' : 'Good Evening');
+
         let briefHtml = `
             <div style="margin-bottom: 16px;">
-                <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 8px;">Good Morning</h3>
+                <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 8px;">${greeting}</h3>
                 <div style="font-size: 15px; font-weight: 500;">
                     Expect ${weatherData.condition.description} with a high of ${Math.round(weatherData.tempHigh || weatherData.temperature)}°C today.
                 </div>

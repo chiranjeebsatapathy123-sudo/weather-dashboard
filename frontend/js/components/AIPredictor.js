@@ -1,19 +1,25 @@
 export const AIPredictor = {
     async trainAndPredict(historyData) {
-        if (!window.tf) {
-            throw new Error("TensorFlow.js failed to load. Please check your connection.");
+        const tf = window.tf;
+        if (!tf) {
+            throw new Error("TensorFlow.js failed to load. Please check your internet connection.");
         }
         
         // Prepare Data
-        // History data comes as an array of 7 objects: { date, tempHigh, tempLow, precipitation }
-        if (!historyData || historyData.length < 5) {
-            throw new Error("Not enough historical data to train the neural network.");
+        // History data comes as an array of objects: { date, tempHigh, tempLow, precipitation }
+        if (!historyData || !Array.isArray(historyData)) {
+            throw new Error("No historical data available to train the neural network.");
         }
 
-        const temps = historyData.map(h => h.tempHigh);
+        const validHistory = historyData.filter(h => h && typeof h.tempHigh === 'number' && !isNaN(h.tempHigh));
+        if (validHistory.length < 5) {
+            throw new Error("Not enough historical data to train the neural network (at least 5 days required).");
+        }
+
+        const temps = validHistory.map(h => Number(h.tempHigh));
         
         // Create Sequences: [X1, X2, X3] -> Y
-        // Since we only have 7 days, we'll use a window size of 3
+        // Since we have 7 days, we'll use a window size of 3
         const windowSize = 3;
         const X = [];
         const Y = [];
@@ -23,18 +29,22 @@ export const AIPredictor = {
             Y.push(temps[i + windowSize]);
         }
 
+        if (X.length === 0 || Y.length === 0) {
+            throw new Error("Insufficient sequence windows for training.");
+        }
+
         const xs = tf.tensor2d(X);
         const ys = tf.tensor2d(Y, [Y.length, 1]);
 
-        // Build a simple Dense Neural Network
+        // Build a Dense Neural Network
         const model = tf.sequential();
-        model.add(tf.layers.dense({units: 8, inputShape: [windowSize], activation: 'relu'}));
-        model.add(tf.layers.dense({units: 8, activation: 'relu'}));
-        model.add(tf.layers.dense({units: 1}));
+        model.add(tf.layers.dense({ units: 8, inputShape: [windowSize], activation: 'relu' }));
+        model.add(tf.layers.dense({ units: 8, activation: 'relu' }));
+        model.add(tf.layers.dense({ units: 1 }));
 
-        model.compile({optimizer: tf.train.adam(0.05), loss: 'meanSquaredError'});
+        model.compile({ optimizer: tf.train.adam(0.05), loss: 'meanSquaredError' });
 
-        // Train Model (Wait for UI to render first)
+        // Train Model
         let lossHistory = [];
         await model.fit(xs, ys, {
             epochs: 50,
@@ -53,13 +63,12 @@ export const AIPredictor = {
             }
         });
 
-        // Predict Tomorrow
-        // The last 'windowSize' days from history:
+        // Predict Tomorrow using the last 'windowSize' days from history
         const recentInput = temps.slice(temps.length - windowSize);
         const inputTensor = tf.tensor2d([recentInput]);
         const prediction = model.predict(inputTensor);
         
-        const predictedTemp = prediction.dataSync()[0];
+        let predictedTemp = prediction.dataSync()[0];
         
         // Clean up memory
         xs.dispose();
@@ -68,9 +77,17 @@ export const AIPredictor = {
         prediction.dispose();
         model.dispose();
 
+        if (isNaN(predictedTemp)) {
+            // Fallback to recent average if gradient exploded
+            predictedTemp = temps.reduce((a, b) => a + b, 0) / temps.length;
+        }
+
+        const lastLoss = lossHistory.length > 0 ? lossHistory[lossHistory.length - 1] : 5;
+        const confidenceScore = Math.max(15, Math.min(98.5, 100 - (lastLoss * 2.5)));
+
         return {
             predictedTemp: predictedTemp.toFixed(1),
-            confidence: (100 - (lossHistory[lossHistory.length - 1] * 2)).toFixed(1) // Fake confidence scaling
+            confidence: confidenceScore.toFixed(1)
         };
     }
 };

@@ -14,7 +14,7 @@ import { WeatherCopilot } from './components/WeatherCopilot.js';
 import { CommandBar } from './components/CommandBar.js';
 import { AtmosphereScene } from './components/AtmosphereScene.js';
 import { WeatherBrief } from './components/WeatherBrief.js';
-import { setLanguage } from './i18n.js';
+import { setLanguage, applyTranslations } from './i18n.js';
 import { AIPredictor } from './components/AIPredictor.js';
 
 // Language selector
@@ -46,6 +46,7 @@ const REFRESH_RATE = 10 * 60 * 1000; // 10 minutes
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
+    applyTranslations();
     loadDashboardData(currentCity);
     fetchLocations();
     startRefreshEngine();
@@ -241,14 +242,31 @@ async function loadDashboardData(city, isBackgroundRefresh = false) {
     errorBanner.style.display = 'none';
     
     try {
-        const [weatherData, forecastData, insightsData, alertsData, historyData, riskData] = await Promise.all([
-            api.get(`/weather/current?city=${encodeURIComponent(city)}`),
-            api.get(`/forecast?city=${encodeURIComponent(city)}`).catch(() => null),
-            api.get(`/insights?city=${encodeURIComponent(city)}`).catch(() => ({ insights: [] })),
-            api.get(`/alerts?city=${encodeURIComponent(city)}`).catch(() => []),
-            api.get(`/history/weather?city=${encodeURIComponent(city)}`).catch(() => []),
-            api.get(`/risk/dashboard?city=${encodeURIComponent(city)}`).catch(() => null)
-        ]);
+        let weatherData, forecastData, insightsData, alertsData, historyData, riskData;
+
+        try {
+            const composite = await api.get(`/composite/dashboard?city=${encodeURIComponent(city)}`);
+            if (composite && composite.weather) {
+                weatherData = composite.weather;
+                forecastData = composite.forecast;
+                insightsData = { insights: composite.insights || [] };
+                alertsData = composite.alerts || [];
+                historyData = composite.history || [];
+                riskData = composite.risk;
+            } else {
+                throw new Error("Invalid composite payload");
+            }
+        } catch (compositeErr) {
+            // Fallback to concurrent individual endpoints
+            [weatherData, forecastData, insightsData, alertsData, historyData, riskData] = await Promise.all([
+                api.get(`/weather/current?city=${encodeURIComponent(city)}`),
+                api.get(`/forecast?city=${encodeURIComponent(city)}`).catch(() => null),
+                api.get(`/insights?city=${encodeURIComponent(city)}`).catch(() => ({ insights: [] })),
+                api.get(`/alerts?city=${encodeURIComponent(city)}`).catch(() => []),
+                api.get(`/history/weather?city=${encodeURIComponent(city)}`).catch(() => []),
+                api.get(`/risk/dashboard?city=${encodeURIComponent(city)}`).catch(() => null)
+            ]);
+        }
         
         window.currentForecastData = forecastData;
         window.currentWeatherData = weatherData;

@@ -15,8 +15,8 @@ const fetchHistoricalWeather = async (lat, lon, days = 7) => {
     const end = new Date();
     end.setDate(end.getDate() - 1); // Yesterday
     
-    const start = new Date();
-    start.setDate(end.getDate() - (days - 1));
+    const start = new Date(end);
+    start.setDate(start.getDate() - (days - 1));
 
     const formatDate = (date) => date.toISOString().split('T')[0];
     const startDateStr = formatDate(start);
