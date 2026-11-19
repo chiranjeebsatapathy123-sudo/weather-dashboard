@@ -3,6 +3,7 @@ import { api } from '../api.js';
 export const LocationList = {
     async render(elementId, data, isFav, emptyText) {
         const list = document.getElementById(elementId);
+        if (!list) return;
         list.innerHTML = '';
         
         if (!data || data.length === 0) {
@@ -46,37 +47,45 @@ export const LocationList = {
                 
                 // Fetch live weather data for advanced card
                 try {
-                    const weather = await api.get(`/weather?city=${encodeURIComponent(item.city)}`);
+                    const weather = await api.get(`/weather/current?city=${encodeURIComponent(item.city)}`);
+                    const country = weather.location?.country ? `, ${weather.location.country}` : '';
+                    const temp = weather.temperature !== null && weather.temperature !== undefined ? `${Math.round(weather.temperature)}°C` : '--';
+                    const desc = weather.condition?.description || 'Clear';
+                    const iconUrl = weather.condition?.icon ? `https://openweathermap.org/img/wn/${weather.condition.icon}.png` : '';
+                    const humidity = weather.humidity !== null && weather.humidity !== undefined ? `${weather.humidity}%` : '--';
+                    const wind = weather.wind?.speed !== null && weather.wind?.speed !== undefined ? `${Math.round(weather.wind.speed * 3.6)} km/h` : '--';
+
                     div.innerHTML = `
                         <div class="loc-card-header" style="display:flex; justify-content:space-between; align-items:center;">
-                            <h3 style="margin:0; font-size: 1.2rem;">${weather.location.name}, ${weather.location.country}</h3>
+                            <h3 style="margin:0; font-size: 1.1rem;">${weather.location.name}${country}</h3>
                             <div class="loc-actions">
                                 <button class="icon-btn del-btn" title="Remove" style="background:rgba(255,50,50,0.2); color:#ff5555; width:28px; height:28px;">×</button>
                             </div>
                         </div>
-                        <div style="display:flex; align-items:center; gap: 15px; margin-top: 15px;">
-                            <i class="wi wi-${weather.condition.icon}" style="font-size: 2.5rem; color: var(--primary);"></i>
+                        <div style="display:flex; align-items:center; gap: 12px; margin-top: 12px;">
+                            ${iconUrl ? `<img src="${iconUrl}" alt="${desc}" style="width: 48px; height: 48px;">` : ''}
                             <div>
-                                <div style="font-size: 1.8rem; font-weight: bold;">${Math.round(weather.current.temp)}°C</div>
-                                <div style="opacity: 0.8; font-size: 0.9rem;">${weather.condition.text}</div>
+                                <div style="font-size: 1.5rem; font-weight: bold;">${temp}</div>
+                                <div style="opacity: 0.8; font-size: 0.85rem; text-transform: capitalize;">${desc}</div>
                             </div>
                         </div>
-                        <div style="margin-top: 15px; display:flex; gap: 15px; font-size: 0.85rem; opacity: 0.7;">
-                            <span><i class="wi wi-humidity"></i> ${weather.current.humidity}%</span>
-                            <span><i class="wi wi-strong-wind"></i> ${weather.current.wind_kph} km/h</span>
+                        <div style="margin-top: 12px; display:flex; gap: 15px; font-size: 0.85rem; opacity: 0.7;">
+                            <span>💧 ${humidity}</span>
+                            <span>💨 ${wind}</span>
                         </div>
                     `;
                     
                     const delBtn = div.querySelector('.del-btn');
-                    delBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        if (window.removeFavorite) window.removeFavorite(item.city);
-                    };
+                    if (delBtn) {
+                        delBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            if (window.removeFavorite) window.removeFavorite(item.city);
+                        };
+                    }
                     
                     div.onclick = () => {
                         if (window.loadCity) {
-                            document.querySelector('.sidebar-nav li[data-view="dashboard"]').click();
-                            window.loadCity(weather.location.name);
+                            window.loadCity(weather.location?.name || item.city);
                         }
                     };
                     div.style.cursor = 'pointer';
@@ -85,21 +94,26 @@ export const LocationList = {
                     div.onmouseout = () => div.style.transform = 'translateY(0)';
                     
                 } catch (e) {
-                    div.innerHTML = `<div class="loc-card-header">
+                    div.innerHTML = `<div class="loc-card-header" style="display:flex; justify-content:space-between; align-items:center;">
                                         <h3>${item.city}</h3>
                                         <button class="icon-btn del-btn" title="Remove" style="background:rgba(255,50,50,0.2); color:#ff5555; width:28px; height:28px;">×</button>
                                      </div>
-                                     <div style="color:#ff5555; margin-top:10px; font-size:0.9rem;">Data unavailable</div>`;
-                    div.querySelector('.del-btn').onclick = (e) => {
-                        e.stopPropagation();
-                        if (window.removeFavorite) window.removeFavorite(item.city);
+                                     <div style="color:var(--text-secondary); margin-top:10px; font-size:0.85rem;">Click to load weather</div>`;
+                    const delBtn = div.querySelector('.del-btn');
+                    if (delBtn) {
+                        delBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            if (window.removeFavorite) window.removeFavorite(item.city);
+                        };
+                    }
+                    div.onclick = () => {
+                        if (window.loadCity) window.loadCity(item.city);
                     };
                 }
             } else {
                 div.innerHTML = `<span>${item.city}</span>`;
                 div.onclick = () => {
                     if (window.loadCity) {
-                        document.querySelector('.sidebar-nav li[data-view="dashboard"]').click();
                         window.loadCity(item.city);
                     }
                 };

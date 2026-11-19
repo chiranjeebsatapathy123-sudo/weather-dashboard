@@ -97,6 +97,14 @@ searchInput.addEventListener('keypress', (e) => {
     }
 });
 
+window.addEventListener('weatherSearch', (e) => {
+    if (e.detail && e.detail.city) {
+        currentCity = e.detail.city;
+        loadDashboardData(currentCity);
+        switchView('dashboard');
+    }
+});
+
 refreshBtn.addEventListener('click', () => {
     refreshBtn.style.animation = 'spin 1s linear infinite';
     loadDashboardData(currentCity, true).finally(() => {

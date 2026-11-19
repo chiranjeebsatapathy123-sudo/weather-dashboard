@@ -30,7 +30,8 @@ export const HourlyForecast = {
             }
         });
 
-        const isDark = document.body.getAttribute('data-theme') !== 'light';
+        const currentTheme = document.documentElement.getAttribute('data-theme') || document.body.getAttribute('data-theme');
+        const isDark = currentTheme !== 'light';
         const textColor = isDark ? '#f8fafc' : '#0f172a';
         const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 

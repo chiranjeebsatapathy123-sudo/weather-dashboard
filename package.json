@@ -4,6 +4,7 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
+        "migrate": "node run_migration.js",
         "test": "node --test tests/api.test.js"
     },
     "dependencies": {
