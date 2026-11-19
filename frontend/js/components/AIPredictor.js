@@ -1,9 +1,16 @@
 export const AIPredictor = {
     async trainAndPredict(historyData) {
-        const tf = window.tf;
-        if (!tf) {
-            throw new Error("TensorFlow.js failed to load. Please check your internet connection.");
+        if (!window.tf) {
+            // Dynamically load TensorFlow.js on demand
+            await new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js";
+                s.onload = resolve;
+                s.onerror = () => reject(new Error("TensorFlow.js failed to load. Please check your internet connection."));
+                document.head.appendChild(s);
+            });
         }
+        const tf = window.tf;
         
         // Prepare Data
         // History data comes as an array of objects: { date, tempHigh, tempLow, precipitation }

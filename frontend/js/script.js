@@ -44,7 +44,7 @@ let refreshIntervalId = null;
 const REFRESH_RATE = 10 * 60 * 1000; // 10 minutes
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
     initTheme();
     applyTranslations();
     loadDashboardData(currentCity);
@@ -56,13 +56,25 @@ document.addEventListener('DOMContentLoaded', () => {
     AtmosphereScene.init();
     
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
+        if (document.readyState === 'complete') {
             navigator.serviceWorker.register('/sw.js').catch(err => {
                 console.log('SW registration failed: ', err);
             });
-        });
+        } else {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.log('SW registration failed: ', err);
+                });
+            });
+        }
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
 
 function startRefreshEngine() {
     if (refreshIntervalId) clearInterval(refreshIntervalId);
@@ -509,19 +521,28 @@ window.resetPersonalization = () => {
 };
 
 // Load personalization on boot
-window.addEventListener('DOMContentLoaded', () => {
+function loadPersonalization() {
     const configStr = localStorage.getItem('weatheros_config');
     if (configStr) {
         try {
             const config = JSON.parse(configStr);
-            if(config.unit) document.querySelector(`input[name="tempUnit"][value="${config.unit}"]`).checked = true;
-            if(config.prefTemp) document.getElementById('prefTemp').value = config.prefTemp;
-            if(config.maxWind) document.getElementById('maxWind').value = config.maxWind;
-            if(config.maxRain) document.getElementById('maxRain').value = config.maxRain;
-            if(config.maxUV) document.getElementById('maxUV').value = config.maxUV;
+            if(config.unit) {
+                const radio = document.querySelector(`input[name="tempUnit"][value="${config.unit}"]`);
+                if (radio) radio.checked = true;
+            }
+            if(config.prefTemp && document.getElementById('prefTemp')) document.getElementById('prefTemp').value = config.prefTemp;
+            if(config.maxWind && document.getElementById('maxWind')) document.getElementById('maxWind').value = config.maxWind;
+            if(config.maxRain && document.getElementById('maxRain')) document.getElementById('maxRain').value = config.maxRain;
+            if(config.maxUV && document.getElementById('maxUV')) document.getElementById('maxUV').value = config.maxUV;
         } catch(e){}
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', loadPersonalization);
+} else {
+    loadPersonalization();
+}
 
 function switchView(viewId) {
     views.forEach(v => v.style.display = 'none');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'weatheros-v10';
+const CACHE_NAME = 'weatheros-v11';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -51,33 +51,17 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Only cache GET requests
     if (event.request.method !== 'GET') return;
     
-    // For API calls, try network first, then fallback to cache
-    if (event.request.url.includes('/api/')) {
-        event.respondWith(
-            fetch(event.request).then(response => {
+    // Network-first for both API and static assets, falling back to cache when offline
+    event.respondWith(
+        fetch(event.request).then(response => {
+            if (response && response.status === 200) {
                 const clone = response.clone();
                 caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                return response;
-            }).catch(() => caches.match(event.request))
-        );
-        return;
-    }
-
-    // For static assets, try cache first, then network, and cache fresh responses
-    event.respondWith(
-        caches.match(event.request).then(cachedResponse => {
-            if (cachedResponse) return cachedResponse;
-            return fetch(event.request).then(response => {
-                if (response && response.status === 200) {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                }
-                return response;
-            });
-        })
+            }
+            return response;
+        }).catch(() => caches.match(event.request))
     );
 });
 

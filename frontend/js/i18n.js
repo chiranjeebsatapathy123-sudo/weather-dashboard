@@ -138,7 +138,11 @@ export function applyTranslations() {
 
 // Auto-apply on load
 if (typeof document !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', () => {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTranslations();
+        });
+    } else {
         applyTranslations();
-    });
+    }
 }
