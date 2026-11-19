@@ -151,6 +151,34 @@ test('API V1 Insights and Risk Validation', async (t) => {
         assert.strictEqual(res.body.success, false);
         assert.strictEqual(res.body.error.code, 'INVALID_INPUT');
     });
+
+    await t.test('GET /api/v1/forecast without city should return 400', async () => {
+        const res = await client.get('/api/v1/forecast');
+        assert.strictEqual(res.status, 400);
+        assert.strictEqual(res.body.success, false);
+        assert.strictEqual(res.body.error.code, 'INVALID_INPUT');
+    });
+
+    await t.test('GET /api/v1/alerts without city should return 400', async () => {
+        const res = await client.get('/api/v1/alerts');
+        assert.strictEqual(res.status, 400);
+        assert.strictEqual(res.body.success, false);
+        assert.strictEqual(res.body.error.code, 'INVALID_INPUT');
+    });
+
+    await t.test('POST /api/v1/locations/compare with invalid body should return 400', async () => {
+        const res = await client.post('/api/v1/locations/compare').send({ cities: ['SingleCity'] });
+        assert.strictEqual(res.status, 400);
+        assert.strictEqual(res.body.success, false);
+        assert.strictEqual(res.body.error.code, 'INVALID_INPUT');
+    });
+
+    await t.test('GET /api/v1/favorites without auth should return 401', async () => {
+        const res = await client.get('/api/v1/favorites');
+        assert.strictEqual(res.status, 401);
+        assert.strictEqual(res.body.success, false);
+        assert.strictEqual(res.body.error.code, 'UNAUTHORIZED');
+    });
 });
 
 after(() => {
