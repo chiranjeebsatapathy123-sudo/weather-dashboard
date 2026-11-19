@@ -45,28 +45,45 @@ const REFRESH_RATE = 10 * 60 * 1000; // 10 minutes
 
 // Initialize
 function initApp() {
-    initTheme();
-    applyTranslations();
-    loadDashboardData(currentCity);
-    fetchLocations();
-    startRefreshEngine();
-    
-    WeatherCopilot.init(api);
-    CommandBar.init();
-    AtmosphereScene.init();
-    
-    if ('serviceWorker' in navigator) {
-        if (document.readyState === 'complete') {
-            navigator.serviceWorker.register('/sw.js').catch(err => {
-                console.log('SW registration failed: ', err);
-            });
-        } else {
-            window.addEventListener('load', () => {
+    try {
+        if (window.location.search.includes('reset') || window.location.search.includes('nocache')) {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(regs => {
+                    for (const reg of regs) reg.unregister();
+                });
+            }
+            if ('caches' in window) {
+                caches.keys().then(keys => {
+                    for (const key of keys) caches.delete(key);
+                });
+            }
+        }
+        initTheme();
+        applyTranslations();
+        loadDashboardData(currentCity);
+        fetchLocations();
+        startRefreshEngine();
+        
+        WeatherCopilot.init(api);
+        CommandBar.init();
+        AtmosphereScene.init();
+        
+        if ('serviceWorker' in navigator) {
+            if (document.readyState === 'complete') {
                 navigator.serviceWorker.register('/sw.js').catch(err => {
                     console.log('SW registration failed: ', err);
                 });
-            });
+            } else {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').catch(err => {
+                        console.log('SW registration failed: ', err);
+                    });
+                });
+            }
         }
+    } catch (err) {
+        console.error('App initialization error:', err);
+        showError('Application failed to initialize: ' + err.message);
     }
 }
 
@@ -92,12 +109,12 @@ document.addEventListener("visibilitychange", () => {
 });
 
 let debounceTimer;
-searchInput.addEventListener('input', (e) => {
+searchInput?.addEventListener('input', (e) => {
     clearTimeout(debounceTimer);
     // Could implement autocomplete here later
 });
 
-searchInput.addEventListener('keypress', (e) => {
+searchInput?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         const val = searchInput.value.trim();
         if (val) {
@@ -117,19 +134,22 @@ window.addEventListener('weatherSearch', (e) => {
     }
 });
 
-refreshBtn.addEventListener('click', () => {
+refreshBtn?.addEventListener('click', () => {
     refreshBtn.style.animation = 'spin 1s linear infinite';
     loadDashboardData(currentCity, true).finally(() => {
         refreshBtn.style.animation = '';
     });
 });
 
-document.getElementById('notifBtn').addEventListener('click', (e) => {
+document.getElementById('notifBtn')?.addEventListener('click', (e) => {
     e.stopPropagation();
     const dd = document.getElementById('notifDropdown');
-    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
-    if (dd.style.display === 'block') {
-        document.getElementById('notifBadge').style.display = 'none';
+    if (dd) {
+        dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+        if (dd.style.display === 'block') {
+            const badge = document.getElementById('notifBadge');
+            if (badge) badge.style.display = 'none';
+        }
     }
     
     // Request Web Push Notifications
@@ -178,11 +198,11 @@ if (locationBtn) {
     });
 }
 
-document.getElementById('closeError').addEventListener('click', () => {
-    errorBanner.style.display = 'none';
+document.getElementById('closeError')?.addEventListener('click', () => {
+    if (errorBanner) errorBanner.style.display = 'none';
 });
 
-themeToggleBtn.addEventListener('click', toggleTheme);
+themeToggleBtn?.addEventListener('click', toggleTheme);
 
 navBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -200,7 +220,7 @@ mobNavBtns.forEach(btn => {
     });
 });
 
-document.getElementById('favBtn').addEventListener('click', toggleFavorite);
+document.getElementById('favBtn')?.addEventListener('click', toggleFavorite);
 
 const shareBtn = document.getElementById('shareBtn');
 if (shareBtn) {

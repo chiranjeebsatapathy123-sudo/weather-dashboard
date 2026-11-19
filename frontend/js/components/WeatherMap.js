@@ -44,7 +44,11 @@ export const WeatherMap = {
                     const updateRadar = () => {
                         if (radarLayer) mapInstance.removeLayer(radarLayer);
                         const frame = pastFrames[frameIndex];
-                        radarLayer = L.tileLayer(`https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/2/1_1.png`, {
+                        const radarPath = frame.path.startsWith('/') ? frame.path : `/${frame.path}`;
+                        const radarUrl = radarPath.startsWith('/v2/radar')
+                            ? `https://tilecache.rainviewer.com${radarPath}/256/{z}/{x}/{y}/2/1_1.png`
+                            : `https://tilecache.rainviewer.com/v2/radar${radarPath}/256/{z}/{x}/{y}/2/1_1.png`;
+                        radarLayer = L.tileLayer(radarUrl, {
                             opacity: 0.65,
                             zIndex: 10
                         }).addTo(mapInstance);
@@ -78,7 +82,8 @@ function startParticleEngine() {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    const condition = window.currentWeatherData?.condition?.toLowerCase() || 'clear';
+    const condObj = window.currentWeatherData?.condition;
+    const condition = (typeof condObj === 'string' ? condObj : (condObj?.main || condObj?.description || 'clear')).toLowerCase();
     
     // Set canvas resolution to container size
     const rect = canvas.parentElement.getBoundingClientRect();
@@ -129,13 +134,13 @@ function startParticleEngine() {
             ctx.beginPath();
             
             if (isRaining) {
-                ctx.strokeStyle = \`rgba(174, 194, 224, \${p.opacity})\`;
+                ctx.strokeStyle = `rgba(174, 194, 224, ${p.opacity})`;
                 ctx.lineWidth = 1.5;
                 ctx.moveTo(p.x, p.y);
                 ctx.lineTo(p.x + Math.sin(p.angle) * p.length, p.y + Math.cos(p.angle) * p.length);
                 ctx.stroke();
             } else if (isSnowing) {
-                ctx.fillStyle = \`rgba(255, 255, 255, \${p.opacity})\`;
+                ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
                 ctx.arc(p.x, p.y, p.length, 0, Math.PI * 2);
                 ctx.fill();
             }

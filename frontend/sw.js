@@ -1,4 +1,4 @@
-const CACHE_NAME = 'weatheros-v11';
+const CACHE_NAME = 'weatheros-v12';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
