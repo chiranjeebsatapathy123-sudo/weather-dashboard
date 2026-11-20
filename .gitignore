@@ -1,3 +1,4 @@
 node_modules/
 .env
 *.backup
+api/db/local_db.json

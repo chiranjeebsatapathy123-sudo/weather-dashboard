@@ -60,9 +60,19 @@ function createTestClient(expressApp) {
     };
 
     const client = {
-        get: (path) => send('GET', path),
-        post: (path) => {
-            let requestHeaders = {};
+        get: (path, headers = {}) => {
+            let requestHeaders = { ...headers };
+            const chain = {
+                set: (k, v) => {
+                    requestHeaders[k] = v;
+                    return chain;
+                },
+                then: (resolve, reject) => send('GET', path, null, requestHeaders).then(resolve, reject)
+            };
+            return chain;
+        },
+        post: (path, headers = {}) => {
+            let requestHeaders = { ...headers };
             const chain = {
                 set: (k, v) => {
                     requestHeaders[k] = v;
@@ -73,7 +83,17 @@ function createTestClient(expressApp) {
             };
             return chain;
         },
-        delete: (path) => send('DELETE', path),
+        delete: (path, headers = {}) => {
+            let requestHeaders = { ...headers };
+            const chain = {
+                set: (k, v) => {
+                    requestHeaders[k] = v;
+                    return chain;
+                },
+                then: (resolve, reject) => send('DELETE', path, null, requestHeaders).then(resolve, reject)
+            };
+            return chain;
+        },
         close: () => {
             if (server) {
                 server.close();
@@ -178,6 +198,58 @@ test('API V1 Insights and Risk Validation', async (t) => {
         assert.strictEqual(res.status, 401);
         assert.strictEqual(res.body.success, false);
         assert.strictEqual(res.body.error.code, 'UNAUTHORIZED');
+    });
+});
+
+test('API V1 User State and Locations Lifecycle', async (t) => {
+    const testUserId = '11111111-2222-3333-4444-555555555555';
+
+    await t.test('POST /api/v1/favorites with auth should add favorite city', async () => {
+        const res = await client.post('/api/v1/favorites')
+            .set('x-user-id', testUserId)
+            .send({ city: 'Sydney' });
+        assert.strictEqual(res.status, 201);
+        assert.strictEqual(res.body.success, true);
+        assert.strictEqual(res.body.data.city, 'Sydney');
+    });
+
+    await t.test('GET /api/v1/favorites with auth should return user favorites', async () => {
+        const res = await client.get('/api/v1/favorites')
+            .set('x-user-id', testUserId);
+        assert.strictEqual(res.status, 200);
+        assert.strictEqual(res.body.success, true);
+        assert(Array.isArray(res.body.data));
+        assert(res.body.data.some(f => f.city === 'Sydney'));
+    });
+
+    await t.test('POST /api/v1/favorites duplicate should return 400 ALREADY_EXISTS', async () => {
+        const res = await client.post('/api/v1/favorites')
+            .set('x-user-id', testUserId)
+            .send({ city: 'Sydney' });
+        assert.strictEqual(res.status, 400);
+        assert.strictEqual(res.body.error.code, 'ALREADY_EXISTS');
+    });
+
+    await t.test('GET /api/v1/locations should return list of saved locations', async () => {
+        const res = await client.get('/api/v1/locations');
+        assert.strictEqual(res.status, 200);
+        assert.strictEqual(res.body.success, true);
+        assert(Array.isArray(res.body.data));
+    });
+
+    await t.test('DELETE /api/v1/favorites/:city with auth should remove favorite', async () => {
+        const res = await client.delete('/api/v1/favorites/Sydney')
+            .set('x-user-id', testUserId);
+        assert.strictEqual(res.status, 200);
+        assert.strictEqual(res.body.success, true);
+    });
+
+    await t.test('GET /api/v1/history with auth should return search history', async () => {
+        const res = await client.get('/api/v1/history')
+            .set('x-user-id', testUserId);
+        assert.strictEqual(res.status, 200);
+        assert.strictEqual(res.body.success, true);
+        assert(Array.isArray(res.body.data));
     });
 });
 

@@ -74,6 +74,12 @@ router.get('/dashboard', optionalAuth, validateLocationQuery, async (req, res, n
             risk
         };
 
+        // Save to search history asynchronously
+        if (weather?.location?.name) {
+            const { recordSearch } = require('../services/weatherService');
+            recordSearch(weather.location.name, req.user?.id);
+        }
+
         return successResponse(res, data, { source: "compositeService" });
     } catch (error) {
         if (error.status === 404) return errorResponse(res, "LOCATION_NOT_FOUND", "Location not found.", 404);

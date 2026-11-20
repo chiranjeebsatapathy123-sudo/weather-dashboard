@@ -708,11 +708,18 @@ if (planTripBtn) {
                 api.get(`/weather/current?city=${encodeURIComponent(end)}`)
             ]);
 
-            document.getElementById('tripStartWeather').innerHTML = `<strong>${startData.location.name}</strong>: ${startData.temp}°C, ${startData.description}`;
-            document.getElementById('tripEndWeather').innerHTML = `<strong>${endData.location.name}</strong>: ${endData.temp}°C, ${endData.description}`;
+            const startTemp = startData.temperature !== null && startData.temperature !== undefined ? Math.round(startData.temperature) : '--';
+            const startDesc = startData.condition?.description || 'Clear';
+            const endTemp = endData.temperature !== null && endData.temperature !== undefined ? Math.round(endData.temperature) : '--';
+            const endDesc = endData.condition?.description || 'Clear';
+
+            document.getElementById('tripStartWeather').innerHTML = `<strong>${startData.location.name}</strong>: ${startTemp}°C, ${startDesc}`;
+            document.getElementById('tripEndWeather').innerHTML = `<strong>${endData.location.name}</strong>: ${endTemp}°C, ${endDesc}`;
             
             // Mock midpoint
-            const midTemp = Math.round((startData.temp + endData.temp) / 2);
+            const midTemp = (startData.temperature !== null && endData.temperature !== null)
+                ? Math.round((startData.temperature + endData.temperature) / 2)
+                : '--';
             document.getElementById('tripMidWeather').innerHTML = `<strong>En Route</strong>: ~${midTemp}°C, Transitioning conditions`;
             
         } catch (e) {
