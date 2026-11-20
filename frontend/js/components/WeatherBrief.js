@@ -34,14 +34,14 @@ export const WeatherBrief = {
             briefHtml += `
             <div style="margin-bottom: 16px; border-left: 2px solid var(--warning, #f59e0b); padding-left: 12px;">
                 <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 4px;">Wind</h3>
-                <div style="font-size: 14px;">Elevated winds at ${weatherData.wind.speed} km/h. Outdoor activities may be impacted.</div>
+                <div style="font-size: 14px;">Elevated winds at ${formatSpeed(weatherData.wind?.speed || 0)}. Outdoor activities may be impacted.</div>
             </div>
             `;
         } else {
              briefHtml += `
             <div style="margin-bottom: 16px; border-left: 2px solid var(--success, #10b981); padding-left: 12px;">
                 <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 4px;">Wind</h3>
-                <div style="font-size: 14px;">Calm winds at ${weatherData.wind.speed} km/h.</div>
+                <div style="font-size: 14px;">Calm winds at ${formatSpeed(weatherData.wind?.speed || 0)}.</div>
             </div>
             `;
         }
