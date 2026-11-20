@@ -43,7 +43,7 @@ import { AtmosphereScene } from './components/AtmosphereScene.js';
 import { WeatherBrief } from './components/WeatherBrief.js';
 import { setLanguage, applyTranslations } from './i18n.js';
 import { AIPredictor } from './components/AIPredictor.js';
-import { getUnit, setUnit, getTempSymbol } from './units.js';
+import { getUnit, setUnit, getTempSymbol, formatTempRaw } from './units.js';
 
 // Unit toggle
 const unitToggleBtn = document.getElementById('unitToggleBtn');
@@ -775,6 +775,13 @@ if (loginBtn) {
 }
 
 // Trip Planner Logic
+
+document.getElementById('tripStart')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('planTripBtn')?.click();
+});
+document.getElementById('tripEnd')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('planTripBtn')?.click();
+});
 const planTripBtn = document.getElementById('planTripBtn');
 if (planTripBtn) {
     planTripBtn.addEventListener('click', async () => {

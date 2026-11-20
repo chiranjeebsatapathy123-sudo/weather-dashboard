@@ -7,7 +7,7 @@ const apiLimiter = rateLimit({
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
     validate: false,
-    keyGenerator: (req) => req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    keyGenerator: (req) => req.ip || (Array.isArray(req.headers['x-forwarded-for']) ? req.headers['x-forwarded-for'][0] : req.headers['x-forwarded-for']) || '127.0.0.1'
 });
 
 module.exports = { apiLimiter };
