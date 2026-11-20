@@ -722,12 +722,16 @@ function renderPhase6RiskUI(riskData) {
 const compareInput = document.getElementById('compareInput');
 const addCompareBtn = document.getElementById('addCompareBtn');
 if (addCompareBtn && compareInput) {
-    addCompareBtn.addEventListener('click', () => {
+    const handleCompare = () => {
         const city = compareInput.value.trim();
         if (city) {
             CompareLocations.addCompareCity(api, city);
             compareInput.value = '';
         }
+    };
+    addCompareBtn.addEventListener('click', handleCompare);
+    compareInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleCompare();
     });
 }
 
@@ -932,6 +936,9 @@ if (runTfPredictionBtn) {
             tfResultContainer.style.display = 'block';
             runTfPredictionBtn.innerText = 'Retrain Neural Network';
             runTfPredictionBtn.style.display = 'block';
+
+            // Extend historical chart with AI predicted tomorrow curve
+            HistoricalCharts.render(window.currentHistoryData, result.predictedTemp);
 
         } catch (error) {
             alert(error.message);

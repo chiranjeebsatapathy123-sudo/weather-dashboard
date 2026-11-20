@@ -47,8 +47,9 @@ router.get("/weather", validateLocationQuery, async (req, res, next) => {
         }
 
         if (lat && lon) {
-            const history = await fetchHistoricalWeather(lat, lon, 7);
-            return successResponse(res, history, { source: "open-meteo" });
+            const days = Math.min(30, Math.max(1, parseInt(req.query.days) || 7));
+            const history = await fetchHistoricalWeather(lat, lon, days);
+            return successResponse(res, history, { source: "open-meteo", days });
         }
         
         return successResponse(res, [], { source: "none" });

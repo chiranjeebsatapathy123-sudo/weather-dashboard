@@ -1,3 +1,5 @@
+import { formatTemp, getTempSymbol, formatSpeed } from '../units.js';
+
 export const CompareLocations = {
     async addCompareCity(api, city) {
         try {
@@ -19,10 +21,11 @@ export const CompareLocations = {
             return;
         }
 
-        const temp = data.temperature !== null && data.temperature !== undefined ? `${Math.round(data.temperature)}°C` : '--';
-        const feels = data.feelsLike !== null && data.feelsLike !== undefined ? `${Math.round(data.feelsLike)}°C` : '--';
+        const unitSymbol = getTempSymbol();
+        const temp = data.temperature !== null && data.temperature !== undefined ? `${formatTemp(data.temperature)}${unitSymbol}` : '--';
+        const feels = data.feelsLike !== null && data.feelsLike !== undefined ? `${formatTemp(data.feelsLike)}${unitSymbol}` : '--';
         const humidity = data.humidity !== null && data.humidity !== undefined ? `${data.humidity}%` : '--';
-        const windSpeed = data.wind && data.wind.speed !== null && data.wind.speed !== undefined ? `${Math.round(data.wind.speed * 3.6)} km/h` : '--';
+        const windSpeed = data.wind && data.wind.speed !== null && data.wind.speed !== undefined ? formatSpeed(data.wind.speed) : '--';
         const rain = data.precipitation !== null && data.precipitation !== undefined ? `${data.precipitation} mm` : '0 mm';
         const icon = data.condition && data.condition.icon ? `https://openweathermap.org/img/wn/${data.condition.icon}@2x.png` : '';
 
