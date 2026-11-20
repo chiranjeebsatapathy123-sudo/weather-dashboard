@@ -18,7 +18,7 @@ const generateResponse = async (context, prompt, intent) => {
     const feelsLike = Math.round(currentWeather.feelsLike);
 
     if (intent === "RAIN_FORECAST") {
-        if (!forecast) return "I cannot forecast rain right now as forecast data is unavailable.";
+        if (!forecast || !Array.isArray(forecast.list)) return "I cannot forecast rain right now as forecast data is unavailable.";
         const nextFewHours = forecast.list.slice(0, 4);
         const maxPop = Math.max(...nextFewHours.map(f => f.pop));
         if (maxPop > 0.5) return `🌧 Rain is likely. The forecast currently shows a ${Math.round(maxPop * 100)}% chance of precipitation in the coming hours.`;
@@ -26,7 +26,7 @@ const generateResponse = async (context, prompt, intent) => {
     }
     
     if (intent === "TEMPERATURE_FORECAST") {
-        if (!forecast) return "I don't have forecast data to predict temperatures.";
+        if (!forecast || !Array.isArray(forecast.list)) return "I don't have forecast data to predict temperatures.";
         const temps = forecast.list.slice(0, 8).map(f => f.temp);
         const high = Math.round(Math.max(...temps));
         return `Temperatures will peak around ${high}°C today. It's currently ${temp}°C and feeling like ${feelsLike}°C.`;

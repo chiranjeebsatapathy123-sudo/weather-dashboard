@@ -1,3 +1,30 @@
+// Global Progress Bar helper
+window.WeatherProgressBar = {
+    start() {
+        const bar = document.getElementById('appProgressBar');
+        if (!bar) return;
+        bar.classList.add('active');
+        bar.style.width = '35%';
+        setTimeout(() => { if (bar.classList.contains('active')) bar.style.width = '75%'; }, 150);
+    },
+    done() {
+        const bar = document.getElementById('appProgressBar');
+        if (!bar) return;
+        bar.style.width = '100%';
+        setTimeout(() => {
+            bar.classList.remove('active');
+            bar.style.width = '0%';
+        }, 300);
+    }
+};
+
+document.getElementById('cmdBarBadge')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (typeof CommandBar !== 'undefined' && CommandBar.toggle) {
+        CommandBar.toggle();
+    }
+});
+
 import { api } from './api.js';
 import { CurrentWeather } from './components/CurrentWeather.js';
 import { WeatherMetrics } from './components/WeatherMetrics.js';
@@ -667,8 +694,8 @@ function updateAppBackground(icon, sunrise, sunset) {
     }
 }
 
-function showLoader() { loader.style.display = 'flex'; }
-function hideLoader() { loader.style.display = 'none'; }
+function showLoader() { loader.style.display = 'flex'; window.WeatherProgressBar?.start(); }
+function hideLoader() { loader.style.display = 'none'; window.WeatherProgressBar?.done(); }
 
 // Phase 6 Render Function
 function renderPhase6RiskUI(riskData) {
