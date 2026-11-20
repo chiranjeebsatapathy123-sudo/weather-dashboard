@@ -48,3 +48,12 @@ export function formatDistance(meters) {
     }
     return `${km.toFixed(1)} km`;
 }
+
+export function formatTempRaw(celsius) {
+    if (celsius === null || celsius === undefined || isNaN(celsius)) return '--';
+    const c = Number(celsius);
+    if (getUnit() === 'F') {
+        return Math.round(c * 1.8 + 32);
+    }
+    return Math.round(c);
+}
