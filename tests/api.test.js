@@ -253,6 +253,40 @@ test('API V1 User State and Locations Lifecycle', async (t) => {
     });
 });
 
+
+test('API V1 Enterprise Operations & Platform Auth Guards', async (t) => {
+    await t.test('GET /api/v1/operations/overview without auth should return 401', async () => {
+        const res = await client.get('/api/v1/operations/overview');
+        assert.strictEqual(res.status, 401);
+        assert.strictEqual(res.body.success, false);
+        assert.strictEqual(res.body.error.code, 'UNAUTHORIZED');
+    });
+
+    await t.test('GET /api/v1/intelligence/overview without auth should return 401', async () => {
+        const res = await client.get('/api/v1/intelligence/overview');
+        assert.strictEqual(res.status, 401);
+        assert.strictEqual(res.body.success, false);
+        assert.strictEqual(res.body.error.code, 'UNAUTHORIZED');
+    });
+
+    await t.test('POST /api/v1/ai/chat with overly long message should return 400', async () => {
+        const longMsg = 'a'.repeat(501);
+        const res = await client.post('/api/v1/ai/chat').send({ locationId: 'New York', message: longMsg });
+        assert.strictEqual(res.status, 400);
+        assert.strictEqual(res.body.success, false);
+        assert.strictEqual(res.body.error.code, 'INVALID_INPUT');
+    });
+
+    await t.test('GET /api/v1/health should include valid version and service metadata', async () => {
+        const res = await client.get('/api/v1/health');
+        assert.strictEqual(res.status, 200);
+        assert.strictEqual(res.body.success, true);
+        assert.strictEqual(res.body.data.status, 'ok');
+        assert.strictEqual(res.body.data.service, 'weather-intelligence-api');
+        assert.strictEqual(res.body.data.version, '2.0.0');
+    });
+});
+
 after(() => {
     client.close();
 });
