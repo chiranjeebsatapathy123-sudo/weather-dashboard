@@ -29,6 +29,14 @@ const { validateLocationQuery } = require("../middleware/validation");
 const { fetchCurrentWeather } = require("../services/weatherService");
 const { fetchHistoricalWeather } = require("../services/historyService");
 
+const CITY_COORDS_FALLBACK = {
+    'new york': { lat: 40.7128, lon: -74.0060 },
+    'london': { lat: 51.5074, lon: -0.1278 },
+    'tokyo': { lat: 35.6762, lon: 139.6503 },
+    'paris': { lat: 48.8566, lon: 2.3522 },
+    'sydney': { lat: -33.8688, lon: 151.2093 }
+};
+
 router.get("/weather", validateLocationQuery, async (req, res, next) => {
     try {
         const location = req.validatedLocation.city || req.validatedLocation;
@@ -36,10 +44,18 @@ router.get("/weather", validateLocationQuery, async (req, res, next) => {
         // Resolve coords if we only have a city name
         let lat, lon;
         if (typeof location === 'string') {
-            const current = await fetchCurrentWeather(location);
-            if (current.coordinates) {
-                lat = current.coordinates.lat;
-                lon = current.coordinates.lon;
+            try {
+                const current = await fetchCurrentWeather(location);
+                if (current && current.coordinates) {
+                    lat = current.coordinates.lat;
+                    lon = current.coordinates.lon;
+                }
+            } catch (err) {
+                const fallback = CITY_COORDS_FALLBACK[location.trim().toLowerCase()];
+                if (fallback) {
+                    lat = fallback.lat;
+                    lon = fallback.lon;
+                }
             }
         } else {
             lat = location.lat;
@@ -52,7 +68,7 @@ router.get("/weather", validateLocationQuery, async (req, res, next) => {
             return successResponse(res, history, { source: "open-meteo", days });
         }
         
-        return successResponse(res, [], { source: "none" });
+        return successResponse(res, [], { source: "none", days: 0 });
     } catch (error) {
         next(error);
     }

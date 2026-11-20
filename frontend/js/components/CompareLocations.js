@@ -6,7 +6,7 @@ export const CompareLocations = {
             const data = await api.get(`/weather/current?city=${encodeURIComponent(city)}`);
             this.renderCard(data);
         } catch (e) {
-            alert(`Could not fetch weather for ${city}`);
+            if (window.showAppToast) window.showAppToast('Compare Locations', `Could not fetch weather for ${city}`, 'danger'); else alert(`Could not fetch weather for ${city}`);
         }
     },
     
@@ -17,7 +17,7 @@ export const CompareLocations = {
         const cityName = data.location.name || 'Unknown';
         const existing = Array.from(grid.querySelectorAll('h3')).map(h => h.textContent.toLowerCase());
         if (existing.includes(cityName.toLowerCase())) {
-            alert(`${cityName} is already in the comparison grid.`);
+            if (window.showAppToast) window.showAppToast('Compare Locations', `${cityName} is already in the comparison grid.`, 'info'); else alert(`${cityName} is already in the comparison grid.`);
             return;
         }
 

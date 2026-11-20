@@ -285,6 +285,20 @@ test('API V1 Enterprise Operations & Platform Auth Guards', async (t) => {
         assert.strictEqual(res.body.data.service, 'weather-intelligence-api');
         assert.strictEqual(res.body.data.version, '2.0.0');
     });
+
+    await t.test('POST /api/v1/devices/sensor-1/telemetry without auth should return 401', async () => {
+        const res = await client.post('/api/v1/devices/sensor-1/telemetry').send({ temp: 22.5 });
+        assert.strictEqual(res.status, 401);
+        assert.strictEqual(res.body.success, false);
+        assert.strictEqual(res.body.error.code, 'UNAUTHORIZED');
+    });
+
+    await t.test('GET /api/v1/history/weather with valid city should return 200 with array', async () => {
+        const res = await client.get('/api/v1/history/weather?city=New%20York');
+        assert.strictEqual(res.status, 200);
+        assert.strictEqual(res.body.success, true);
+        assert(Array.isArray(res.body.data));
+    });
 });
 
 after(() => {

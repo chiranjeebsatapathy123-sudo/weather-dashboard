@@ -87,7 +87,7 @@ export const WeatherCopilot = {
 
         const city = document.getElementById('cityName').textContent;
         if (city === '--' || !city) {
-            alert('Please search for a location first.');
+            if (window.showAppToast) window.showAppToast('Weather AI', 'Please search for a location first.', 'info'); else alert('Please search for a location first.');
             return;
         }
 

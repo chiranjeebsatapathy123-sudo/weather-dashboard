@@ -1,3 +1,4 @@
+import { formatTemp, getTempSymbol, formatSpeed } from '../units.js';
 import { api } from '../api.js';
 
 export const LocationList = {
@@ -49,11 +50,11 @@ export const LocationList = {
                 try {
                     const weather = await api.get(`/weather/current?city=${encodeURIComponent(item.city)}`);
                     const country = weather.location?.country ? `, ${weather.location.country}` : '';
-                    const temp = weather.temperature !== null && weather.temperature !== undefined ? `${Math.round(weather.temperature)}°C` : '--';
+                    const temp = weather.temperature !== null && weather.temperature !== undefined ? `${formatTemp(weather.temperature)}${getTempSymbol()}` : '--';
                     const desc = weather.condition?.description || 'Clear';
                     const iconUrl = weather.condition?.icon ? `https://openweathermap.org/img/wn/${weather.condition.icon}.png` : '';
                     const humidity = weather.humidity !== null && weather.humidity !== undefined ? `${weather.humidity}%` : '--';
-                    const wind = weather.wind?.speed !== null && weather.wind?.speed !== undefined ? `${Math.round(weather.wind.speed * 3.6)} km/h` : '--';
+                    const wind = weather.wind?.speed !== null && weather.wind?.speed !== undefined ? formatSpeed(weather.wind.speed) : '--';
 
                     div.innerHTML = `
                         <div class="loc-card-header" style="display:flex; justify-content:space-between; align-items:center;">

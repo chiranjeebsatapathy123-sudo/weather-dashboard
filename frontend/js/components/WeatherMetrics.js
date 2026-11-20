@@ -4,7 +4,7 @@ export const WeatherMetrics = {
     render(data) {
         document.getElementById('valHumidity').textContent = `${data.humidity}%`;
         
-        const deg = data.wind.deg;
+        const deg = data.wind?.deg ?? 0;
         let dir = "N";
         if (deg >= 22.5 && deg < 67.5) dir = "NE";
         else if (deg >= 67.5 && deg < 112.5) dir = "E";
@@ -14,7 +14,7 @@ export const WeatherMetrics = {
         else if (deg >= 247.5 && deg < 292.5) dir = "W";
         else if (deg >= 292.5 && deg < 337.5) dir = "NW";
 
-        document.getElementById('valWind').textContent = `${formatSpeed(data.wind.speed)} ${dir}`;
+        document.getElementById('valWind').textContent = `${formatSpeed(data.wind?.speed ?? 0)} ${dir}`;
         document.getElementById('valPressure').textContent = `${data.pressure} hPa`;
         document.getElementById('valVisibility').textContent = formatDistance(data.visibility);
         document.getElementById('valClouds').textContent = `${data.clouds}%`;
@@ -52,7 +52,8 @@ export const WeatherMetrics = {
         
         const runningVal = document.getElementById('valRunning');
         if (runningVal) {
-            const isGood = data.temperature > 5 && data.temperature < 25 && data.wind.speed < 10 && (!data.airQuality || data.airQuality.index <= 2);
+            const windSpeed = data.wind?.speed ?? 0;
+        const isGood = data.temperature > 5 && data.temperature < 25 && windSpeed < 10 && (!data.airQuality || data.airQuality.index <= 2);
             runningVal.textContent = isGood ? 'Yes 🏃‍♂️' : 'Maybe 🚶‍♂️';
             if (data.temperature < -5 || data.temperature > 35) runningVal.textContent = 'No 🚫';
         }
