@@ -1,3 +1,5 @@
+import { formatTemp, getTempSymbol } from '../units.js';
+
 export const BestTime = {
     render(current, forecast) {
         const bestTimeEl = document.getElementById('bestTimePanel');
@@ -40,7 +42,7 @@ export const BestTime = {
                 <p class="best-window">Best window: <strong>${timeStr}</strong></p>
                 <div class="best-reasons">
                     <span>${bestHour.pop === 0 ? '✓ No rain expected' : '⚠ Low rain probability'}</span>
-                    <span>✓ Comfortable temp (${Math.round(bestHour.temp)}°C)</span>
+                    <span>✓ Comfortable temp (${formatTemp(bestHour.temp)}${getTempSymbol()})</span>
                 </div>
             `;
         } else {

@@ -1,3 +1,5 @@
+import { formatTemp } from '../units.js';
+
 export const DailyForecast = {
     render(list) {
         const dailyMap = new Map();
@@ -41,8 +43,8 @@ export const DailyForecast = {
                     <span class="daily-desc">${day.desc}</span>
                     <img class="daily-icon" src="https://openweathermap.org/img/wn/${day.icon}.png" alt="${day.desc}">
                     <div class="daily-temps">
-                        <span>${Math.round(day.max)}°</span>
-                        <span>${Math.round(day.min)}°</span>
+                        <span>${formatTemp(day.max)}°</span>
+                        <span>${formatTemp(day.min)}°</span>
                     </div>
                 </div>
                 <div class="daily-details" style="display: none;">

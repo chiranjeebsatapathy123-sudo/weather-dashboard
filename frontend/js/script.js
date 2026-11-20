@@ -16,6 +16,26 @@ import { AtmosphereScene } from './components/AtmosphereScene.js';
 import { WeatherBrief } from './components/WeatherBrief.js';
 import { setLanguage, applyTranslations } from './i18n.js';
 import { AIPredictor } from './components/AIPredictor.js';
+import { getUnit, setUnit, getTempSymbol } from './units.js';
+
+// Unit toggle
+const unitToggleBtn = document.getElementById('unitToggleBtn');
+unitToggleBtn?.addEventListener('click', () => {
+    const next = getUnit() === 'C' ? 'F' : 'C';
+    setUnit(next);
+    if (unitToggleBtn) unitToggleBtn.textContent = getTempSymbol();
+    const radio = document.querySelector(`input[name="tempUnit"][value="${next}"]`);
+    if (radio) radio.checked = true;
+    if (window.currentWeatherData) {
+        CurrentWeather.render(window.currentWeatherData);
+        if (window.currentForecastData?.list) {
+            HourlyForecast.render(window.currentForecastData.list.slice(0, 8), window.currentWeatherData);
+            DailyForecast.render(window.currentForecastData.list);
+            BestTime.render(window.currentWeatherData, window.currentForecastData);
+        }
+        WeatherMetrics.render(window.currentWeatherData);
+    }
+});
 
 // Language selector
 document.getElementById('langSelect')?.addEventListener('change', (e) => {
@@ -511,8 +531,13 @@ window.loadCity = (city) => {
 
 // --- Personalization Advanced Logic ---
 window.savePersonalization = () => {
+    const unitVal = document.querySelector('input[name="tempUnit"]:checked')?.value || 'C';
+    setUnit(unitVal);
+    const unitBtn = document.getElementById('unitToggleBtn');
+    if (unitBtn) unitBtn.textContent = getTempSymbol();
+
     const config = {
-        unit: document.querySelector('input[name="tempUnit"]:checked').value,
+        unit: unitVal,
         prefTemp: document.getElementById('prefTemp').value,
         maxWind: document.getElementById('maxWind').value,
         maxRain: document.getElementById('maxRain').value,
@@ -520,24 +545,51 @@ window.savePersonalization = () => {
     };
     localStorage.setItem('weatheros_config', JSON.stringify(config));
     
+    // Re-render dashboard with new units if data is present
+    if (window.currentWeatherData) {
+        CurrentWeather.render(window.currentWeatherData);
+        if (window.currentForecastData?.list) {
+            HourlyForecast.render(window.currentForecastData.list.slice(0, 8), window.currentWeatherData);
+            DailyForecast.render(window.currentForecastData.list);
+            BestTime.render(window.currentWeatherData, window.currentForecastData);
+        }
+        WeatherMetrics.render(window.currentWeatherData);
+    }
+
     // Show toast or temporary success state
     const btn = document.querySelector('button[onclick="savePersonalization()"]');
-    const originalText = btn.innerText;
-    btn.innerText = "✓ Saved Successfully";
-    btn.style.background = "#10b981";
-    setTimeout(() => {
-        btn.innerText = originalText;
-        btn.style.background = "#238636";
-    }, 2000);
+    if (btn) {
+        const originalText = btn.innerText;
+        btn.innerText = "✓ Saved Successfully";
+        btn.style.background = "#10b981";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "#238636";
+        }, 2000);
+    }
 };
 
 window.resetPersonalization = () => {
+    setUnit('C');
+    const unitBtn = document.getElementById('unitToggleBtn');
+    if (unitBtn) unitBtn.textContent = '°C';
     localStorage.removeItem('weatheros_config');
     document.getElementById('prefTemp').value = "10-30";
     document.getElementById('maxWind').value = "20";
     document.getElementById('maxRain').value = "40";
     document.getElementById('maxUV').value = "8";
-    document.querySelector('input[name="tempUnit"][value="C"]').checked = true;
+    const radio = document.querySelector('input[name="tempUnit"][value="C"]');
+    if (radio) radio.checked = true;
+
+    if (window.currentWeatherData) {
+        CurrentWeather.render(window.currentWeatherData);
+        if (window.currentForecastData?.list) {
+            HourlyForecast.render(window.currentForecastData.list.slice(0, 8), window.currentWeatherData);
+            DailyForecast.render(window.currentForecastData.list);
+            BestTime.render(window.currentWeatherData, window.currentForecastData);
+        }
+        WeatherMetrics.render(window.currentWeatherData);
+    }
 };
 
 // Load personalization on boot
@@ -556,6 +608,8 @@ function loadPersonalization() {
             if(config.maxUV && document.getElementById('maxUV')) document.getElementById('maxUV').value = config.maxUV;
         } catch(e){}
     }
+    const unitBtn = document.getElementById('unitToggleBtn');
+    if (unitBtn) unitBtn.textContent = getTempSymbol();
 }
 
 if (document.readyState === 'loading') {

@@ -1,3 +1,5 @@
+import { formatSpeed, formatDistance } from '../units.js';
+
 export const WeatherMetrics = {
     render(data) {
         document.getElementById('valHumidity').textContent = `${data.humidity}%`;
@@ -12,9 +14,9 @@ export const WeatherMetrics = {
         else if (deg >= 247.5 && deg < 292.5) dir = "W";
         else if (deg >= 292.5 && deg < 337.5) dir = "NW";
 
-        document.getElementById('valWind').textContent = `${Math.round(data.wind.speed * 3.6)} km/h ${dir}`;
+        document.getElementById('valWind').textContent = `${formatSpeed(data.wind.speed)} ${dir}`;
         document.getElementById('valPressure').textContent = `${data.pressure} hPa`;
-        document.getElementById('valVisibility').textContent = `${(data.visibility / 1000).toFixed(1)} km`;
+        document.getElementById('valVisibility').textContent = formatDistance(data.visibility);
         document.getElementById('valClouds').textContent = `${data.clouds}%`;
 
         if (data.sunrise && data.sunset) {

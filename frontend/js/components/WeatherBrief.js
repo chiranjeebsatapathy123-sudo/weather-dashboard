@@ -1,3 +1,5 @@
+import { formatTemp, getTempSymbol, formatSpeed } from '../units.js';
+
 export const WeatherBrief = {
     render(weatherData, forecastData, riskData) {
         const container = document.getElementById('weatherBriefContent');
@@ -5,12 +7,14 @@ export const WeatherBrief = {
 
         const currentHour = new Date().getHours();
         const greeting = currentHour < 12 ? 'Good Morning' : (currentHour < 18 ? 'Good Afternoon' : 'Good Evening');
+        const highTemp = formatTemp(weatherData.tempHigh || weatherData.temperature);
+        const tempSymbol = getTempSymbol();
 
         let briefHtml = `
             <div style="margin-bottom: 16px;">
                 <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 8px;">${greeting}</h3>
                 <div style="font-size: 15px; font-weight: 500;">
-                    Expect ${weatherData.condition.description} with a high of ${Math.round(weatherData.tempHigh || weatherData.temperature)}°C today.
+                    Expect ${weatherData.condition.description} with a high of ${highTemp}${tempSymbol} today.
                 </div>
             </div>
         `;

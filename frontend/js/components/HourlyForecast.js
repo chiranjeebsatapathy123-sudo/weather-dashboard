@@ -1,3 +1,5 @@
+import { formatTemp, getTempSymbol } from '../units.js';
+
 let hourlyChartInstance = null;
 
 export const HourlyForecast = {
@@ -14,7 +16,8 @@ export const HourlyForecast = {
             const dateObj = new Date(item.dt * 1000);
             const timeStr = index === 0 ? 'NOW' : dateObj.toLocaleTimeString([], {hour: '2-digit'});
             labels.push(timeStr);
-            temps.push(Math.round(item.temp));
+            const displayTemp = formatTemp(item.temp);
+            temps.push(displayTemp);
             pops.push(Math.round(item.pop * 100)); // Probability of Precipitation
 
             if (timelineEl) {
@@ -23,7 +26,7 @@ export const HourlyForecast = {
                 div.innerHTML = `
                     <span class="time">${timeStr}</span>
                     <img src="https://openweathermap.org/img/wn/${item.weather.icon}.png" alt="icon">
-                    <span class="temp">${Math.round(item.temp)}°</span>
+                    <span class="temp">${displayTemp}°</span>
                     <span class="pop"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> ${Math.round(item.pop * 100)}%</span>
                 `;
                 timelineEl.appendChild(div);
@@ -44,7 +47,7 @@ export const HourlyForecast = {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Temperature (°C)',
+                    label: `Temperature (${getTempSymbol()})`,
                     data: temps,
                     borderColor: '#3b82f6',
                     backgroundColor: 'rgba(59, 130, 246, 0.2)',
