@@ -302,5 +302,7 @@ test('API V1 Enterprise Operations & Platform Auth Guards', async (t) => {
 });
 
 after(() => {
-    client.close();
+    if (client && typeof client.close === 'function') {
+        client.close();
+    }
 });
