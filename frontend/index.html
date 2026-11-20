@@ -535,6 +535,18 @@
                         </div>
                     </div>
 
+                                        <div style="margin-top: 30px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <h3>WeatherOS Pro Membership</h3>
+                        <p style="font-size: 13px; opacity: 0.7; margin-top: 8px;">Neural Predictions, extended data modeling, and zero-ad telemetry.</p>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 14px; background: rgba(0,0,0,0.2); padding: 16px 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; gap: 12px;">
+                            <div>
+                                <span id="proStatusBadge" style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4);">Free Tier</span>
+                                <div id="proStatusDesc" style="font-size: 0.85rem; opacity: 0.8; margin-top: 6px;">Upgrade to Pro to unlock client-side ML forecasting.</div>
+                            </div>
+                            <button id="proToggleBtn" onclick="toggleProMembership()" class="btn-primary" style="font-size: 13px; padding: 8px 16px; background: #8b5cf6;">Upgrade to Pro</button>
+                        </div>
+                    </div>
+
                     <div style="margin-top: 30px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
                         <h3>System Controls</h3>
                         <p style="font-size: 13px; opacity: 0.7; margin-top: 8px;">WeatherOS stores your selected activity preferences locally to personalize AI Copilot recommendations.</p>
@@ -735,33 +747,5 @@
     <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 
     <script src="js/script.js" type="module"></script>
-    <script type="module">
-        // Inject Premium Checkout Logic
-        document.getElementById('stripeCheckoutBtn').addEventListener('click', () => {
-            const btn = document.getElementById('stripeCheckoutBtn');
-            const loader = document.getElementById('stripeLoader');
-            btn.style.opacity = '0.5';
-            btn.style.pointerEvents = 'none';
-            btn.innerText = 'Redirecting...';
-            loader.style.display = 'block';
-            
-            // Mock Stripe Delay
-            setTimeout(() => {
-                localStorage.setItem('weatheros_premium', 'true');
-                alert("Payment Successful! Welcome to WeatherOS Pro.");
-                window.location.reload();
-            }, 2500);
-        });
-
-        // Hide Upgrade button if already premium
-        if (localStorage.getItem('weatheros_premium') === 'true') {
-            const btn = document.getElementById('upgradeProBtn');
-            if (btn) {
-                btn.innerHTML = '✨ Pro Active';
-                btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                btn.style.pointerEvents = 'none';
-            }
-        }
-    </script>
 </body>
 </html>

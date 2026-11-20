@@ -253,17 +253,21 @@ themeToggleBtn?.addEventListener('click', toggleTheme);
 
 navBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-target');
+        if (!target) return;
         navBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        switchView(btn.getAttribute('data-target'));
+        switchView(target);
     });
 });
 
 mobNavBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-target');
+        if (!target) return;
         mobNavBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        switchView(btn.getAttribute('data-target'));
+        switchView(target);
     });
 });
 
@@ -646,6 +650,7 @@ if (document.readyState === 'loading') {
 }
 
 function switchView(viewId) {
+    if (!viewId) return;
     views.forEach(v => v.style.display = 'none');
     const target = document.getElementById(`view-${viewId}`);
     if (target) {
@@ -653,7 +658,22 @@ function switchView(viewId) {
         // Force charts and maps to recalculate size when they become visible
         window.dispatchEvent(new Event('resize'));
     }
+    navBtns.forEach(b => {
+        if (b.getAttribute('data-target') === viewId) {
+            b.classList.add('active');
+        } else if (b.getAttribute('data-target')) {
+            b.classList.remove('active');
+        }
+    });
+    mobNavBtns.forEach(b => {
+        if (b.getAttribute('data-target') === viewId) {
+            b.classList.add('active');
+        } else if (b.getAttribute('data-target')) {
+            b.classList.remove('active');
+        }
+    });
 }
+window.switchView = switchView;
 
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'system';
@@ -918,27 +938,149 @@ if (window.EventSource) {
     };
 }
 
-// Check Premium Status for TensorFlow Module
-function checkPremiumStatus() {
-    const isPremium = localStorage.getItem('weatheros_premium') === 'true';
+// --- In-App Toast System ---
+export function showAppToast(title, message = '', type = 'info') {
+    const toast = document.createElement('div');
+    toast.style.position = 'fixed';
+    toast.style.bottom = '24px';
+    toast.style.right = '24px';
+    const bgMap = {
+        success: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+        danger: 'var(--danger, #ef4444)',
+        info: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+        pro: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)'
+    };
+    toast.style.background = bgMap[type] || bgMap.info;
+    toast.style.color = 'white';
+    toast.style.padding = '14px 20px';
+    toast.style.borderRadius = '12px';
+    toast.style.boxShadow = '0 10px 25px rgba(0,0,0,0.4)';
+    toast.style.zIndex = '100000';
+    toast.style.backdropFilter = 'blur(10px)';
+    toast.style.maxWidth = '360px';
+    toast.style.animation = 'fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+    toast.innerHTML = `<div style="font-weight:600; font-size:14px; display:flex; align-items:center; gap:8px;">${title}</div>${message ? `<div style="margin-top:4px; font-size:13px; opacity:0.9;">${message}</div>` : ''}`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'fadeOutDown 0.3s ease-in forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+window.showAppToast = showAppToast;
+
+// --- Premium & Neural Module State Manager ---
+export function updatePremiumUI(isPremium = null) {
+    if (isPremium === null) {
+        isPremium = localStorage.getItem('weatheros_premium') === 'true';
+    }
+    
+    // 1. TensorFlow locked/unlocked state
     const lockedState = document.getElementById('tfLockedState');
     const unlockedState = document.getElementById('tfUnlockedState');
-    
     if (lockedState && unlockedState) {
+        lockedState.style.display = isPremium ? 'none' : 'block';
+        unlockedState.style.display = isPremium ? 'block' : 'none';
+    }
+
+    // 2. Header Upgrade button
+    const upgradeProBtn = document.getElementById('upgradeProBtn');
+    if (upgradeProBtn) {
         if (isPremium) {
-            lockedState.style.display = 'none';
-            unlockedState.style.display = 'block';
+            upgradeProBtn.innerHTML = '✨ Pro Active';
+            upgradeProBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            upgradeProBtn.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.4)';
+            upgradeProBtn.title = 'WeatherOS Pro Active';
         } else {
-            lockedState.style.display = 'block';
-            unlockedState.style.display = 'none';
+            upgradeProBtn.innerHTML = '✨ Upgrade to Pro';
+            upgradeProBtn.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)';
+            upgradeProBtn.style.boxShadow = '0 4px 15px rgba(139, 92, 246, 0.4)';
+            upgradeProBtn.title = 'Upgrade to Pro';
+        }
+    }
+
+    // 3. Personalization view Pro membership badge and button
+    const proBadge = document.getElementById('proStatusBadge');
+    const proDesc = document.getElementById('proStatusDesc');
+    const proToggle = document.getElementById('proToggleBtn');
+    if (proBadge && proToggle) {
+        if (isPremium) {
+            proBadge.innerText = '✨ Pro Active';
+            proBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+            proBadge.style.color = '#34d399';
+            proBadge.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+            if (proDesc) proDesc.innerText = 'All neural models, extended telemetry, and ad-free capabilities unlocked.';
+            proToggle.innerText = 'Reset to Free Tier';
+            proToggle.style.background = 'rgba(239, 68, 68, 0.2)';
+            proToggle.style.color = '#fca5a5';
+            proToggle.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+        } else {
+            proBadge.innerText = 'Free Tier';
+            proBadge.style.background = 'rgba(139, 92, 246, 0.2)';
+            proBadge.style.color = '#c4b5fd';
+            proBadge.style.border = '1px solid rgba(139, 92, 246, 0.4)';
+            if (proDesc) proDesc.innerText = 'Upgrade to Pro to unlock client-side ML forecasting and extended analytics.';
+            proToggle.innerText = 'Upgrade to Pro';
+            proToggle.style.background = '#8b5cf6';
+            proToggle.style.color = 'white';
+            proToggle.style.border = 'none';
         }
     }
 }
+window.checkPremiumStatus = updatePremiumUI;
+window.updatePremiumUI = updatePremiumUI;
 
-// Initial Check
-checkPremiumStatus();
-// Add listener for storage events (if user upgrades in another tab, though page reload handles it usually)
-window.addEventListener('storage', checkPremiumStatus);
+window.toggleProMembership = () => {
+    const isPremium = localStorage.getItem('weatheros_premium') === 'true';
+    if (isPremium) {
+        localStorage.setItem('weatheros_premium', 'false');
+        updatePremiumUI(false);
+        showAppToast('Membership Updated', 'Switched to Free Tier for testing.', 'info');
+    } else {
+        const modal = document.getElementById('upgradeModal');
+        if (modal) modal.style.display = 'flex';
+    }
+};
+
+function initStripeCheckout() {
+    const stripeBtn = document.getElementById('stripeCheckoutBtn');
+    const stripeLoader = document.getElementById('stripeLoader');
+    const upgradeModal = document.getElementById('upgradeModal');
+    if (!stripeBtn) return;
+
+    stripeBtn.addEventListener('click', () => {
+        stripeBtn.style.opacity = '0.6';
+        stripeBtn.style.pointerEvents = 'none';
+        stripeBtn.innerText = 'Processing Payment...';
+        if (stripeLoader) stripeLoader.style.display = 'block';
+
+        setTimeout(() => {
+            localStorage.setItem('weatheros_premium', 'true');
+            updatePremiumUI(true);
+            if (stripeLoader) stripeLoader.style.display = 'none';
+            stripeBtn.style.opacity = '1';
+            stripeBtn.style.pointerEvents = 'auto';
+            stripeBtn.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Pay with Stripe
+            `;
+            if (upgradeModal) upgradeModal.style.display = 'none';
+            showAppToast('Payment Successful! 🎉', 'Welcome to WeatherOS Pro. Neural Predictor is now unlocked.', 'success');
+        }, 600);
+    });
+
+    if (upgradeModal) {
+        upgradeModal.addEventListener('click', (e) => {
+            if (e.target === upgradeModal) {
+                upgradeModal.style.display = 'none';
+            }
+        });
+    }
+}
+
+// Initial Sync
+updatePremiumUI();
+initStripeCheckout();
+window.addEventListener('storage', () => updatePremiumUI());
 
 // Run TensorFlow Prediction
 const runTfPredictionBtn = document.getElementById('runTfPredictionBtn');
